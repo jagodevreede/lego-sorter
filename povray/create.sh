@@ -13,11 +13,20 @@ LDVIEW_FOLDER=/Applications/LDView.app/Contents/MacOS
 RENDER_SIZE=1024
 #set -ex
 
+brick_colors=("lg_black" "lg_blue" "lg_green" "lg_teal" "lg_dark_pink" "lg_brown" "lg_grey" "lg_dark_grey" "lg_light_blue" "lg_turquoise" "lg_blue_green" "lg_pink" "lg_light_green" "lg_light_yellow" "lg_tan" "lg_light_violet" "lg_purple" "lg_violet" "lg_orange" "lg_magenta" "lg_lime" "lg_dark_tan" "lg_light_purple" "lg_medium_lavender" "lg_lavender" "lg_clear_blue" "lg_clear_neon_orange" "lg_clear_brown" "lg_clear_neon_green" "lg_clear_light_blue" "lg_clear" "lg_clear_violet" "lg_bright_purple" "lg_reddish_brown" "lg_bluish_grey" "lg_dark_bluish_grey" "lg_medium_blue" "lg_medium_green" "lg_paradisa_pink" "lg_milky_white" "lg_medium_dark_flesh" "lg_dark_purple" "lg_dark_flesh" "lg_medium_lime" "lg_pearl_blue" "lg_very_light_bluish_grey" "lg_flat_silver" "lg_pearl_white" "lg_bright_light_blue" "lg_bright_light_yellow" "lg_glow_in_dark_clear" "lg_pearl_gold" "lg_dark_brown" "lg_magnet" "lg_electric_contact_alloy" "lg_very_light_grey" "lg_undefined" "lg_medium_orange" "lg_rubber_yellow" "lg_rubber_clear_yellow" "lg_rubber_blue" "lg_rubber_red" "lg_rubber_light_gray" "lg_rubber_dark_blue" "lg_rubber_purple" "lg_rubber_light_bluish_gray" "lg_rubber_flat_silver" "lg_rubber_white")
+
 function random_color {
-  R="0.$(awk -v min=80000 -v max=99999 -v seed=$RANDOM 'BEGIN{srand(seed); print int(min+rand()*(max-min+1))}')"
-  G="0.$(awk -v min=80000 -v max=99999 -v seed=$RANDOM 'BEGIN{srand(seed); print int(min+rand()*(max-min+1))}')"
-  B="0.$(awk -v min=80000 -v max=99999 -v seed=$RANDOM 'BEGIN{srand(seed); print int(min+rand()*(max-min+1))}')"
+  R="0.$(awk -v min=85000 -v max=99999 -v seed=$RANDOM 'BEGIN{srand(seed); print int(min+rand()*(max-min+1))}')"
+  G="0.$(awk -v min=85000 -v max=99999 -v seed=$RANDOM 'BEGIN{srand(seed); print int(min+rand()*(max-min+1))}')"
+  B="0.$(awk -v min=85000 -v max=99999 -v seed=$RANDOM 'BEGIN{srand(seed); print int(min+rand()*(max-min+1))}')"
   sed -i .bak "s/color rgb <LIGHT${1}RGB>/color rgb <$R,$G,$B>/" header.inc.bak
+}
+
+function random_brick_color {
+  selectedexpression=$(printf "%s\n" "${brick_colors[@]}" | shuf -n1)
+  echo $selectedexpression in $1
+
+  sed -i .bak "s/lg_grey/$selectedexpression/" $1.pov
 }
 
 if [[ ! -f $1_org.pov ]]
@@ -40,6 +49,8 @@ function create_img {
 
     sed -i .bak "s/lg_$1$/&\\
     rotate<$X,$Y,$Z>/" $1.pov
+
+    random_brick_color $1
 
     rm *.bak
 
