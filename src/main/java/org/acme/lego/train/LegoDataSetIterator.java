@@ -19,6 +19,7 @@
 
 package org.acme.lego.train;
 
+import org.acme.lego.util.AiModelHelper;
 import org.datavec.api.io.filters.BalancedPathFilter;
 import org.datavec.api.io.labels.ParentPathLabelGenerator;
 import org.datavec.api.split.FileSplit;
@@ -27,28 +28,23 @@ import org.datavec.image.loader.BaseImageLoader;
 import org.datavec.image.recordreader.ImageRecordReader;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.dataset.api.preprocessor.VGG16ImagePreProcessor;
-import org.slf4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 
+import static org.acme.lego.util.AiModelHelper.*;
+
 public class LegoDataSetIterator {
-    private static final Logger log = org.slf4j.LoggerFactory.getLogger(LegoDataSetIterator.class);
+    public static final String DATA_DIR = "./povray/bricks";
 
-    private static final String DATA_DIR = "./povray/bricks";
+    private static final String[] allowedExtensions = BaseImageLoader.ALLOWED_FORMATS;
+    private static final Random rng = new Random(13);
 
-    private static final String [] allowedExtensions = BaseImageLoader.ALLOWED_FORMATS;
-    private static final Random rng  = new Random(13);
-
-    private static final int height = 224;
-    private static final int width = 224;
-    private static final int channels = 3;
     private static final int numClasses = 5;
 
     private static ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
-    private static InputSplit trainData,testData;
+    private static InputSplit trainData, testData;
     private static int batchSize;
 
     public static DataSetIterator trainIterator() throws IOException {
@@ -67,16 +63,16 @@ public class LegoDataSetIterator {
         if (trainPerc >= 100) {
             throw new IllegalArgumentException("Percentage of data set aside for training has to be less than 100%. Test percentage = 100 - training percentage, has to be greater than 0");
         }
-        InputSplit[] filesInDirSplit = filesInDir.sample(pathFilter, trainPerc, 100-trainPerc);
+        InputSplit[] filesInDirSplit = filesInDir.sample(pathFilter, trainPerc, 100 - trainPerc);
         trainData = filesInDirSplit[0];
         testData = filesInDirSplit[1];
     }
 
     private static DataSetIterator makeIterator(InputSplit split) throws IOException {
-        ImageRecordReader recordReader = new ImageRecordReader(height,width,channels,labelMaker);
+        ImageRecordReader recordReader = new ImageRecordReader(height, width, channels, labelMaker);
         recordReader.initialize(split);
         DataSetIterator iter = new RecordReaderDataSetIterator(recordReader, batchSize, 1, numClasses);
-        iter.setPreProcessor( new VGG16ImagePreProcessor());
+        iter.setPreProcessor(AiModelHelper.PRE_PROCESSOR);
         return iter;
     }
 }

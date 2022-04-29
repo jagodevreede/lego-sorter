@@ -1,5 +1,6 @@
 package org.acme.lego.train;
 
+import org.acme.lego.util.AiModelHelper;
 import org.deeplearning4j.core.storage.StatsStorage;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -25,7 +26,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class AiModelTrainer {
     private static final Logger log = org.slf4j.LoggerFactory.getLogger(AiModelTrainer.class);
@@ -163,11 +163,11 @@ public class AiModelTrainer {
         }
 
         log.info("Model build complete in " + (System.currentTimeMillis() - startTime) / 1000 + "sec");
-        transferGraph.save(new File("lego_model.zip"));
+        transferGraph.save(new File(AiModelHelper.MODEL_FILE_NAME));
     }
 
     private static void exportLabels(DataSetIterator trainIter) throws IOException {
-        FileWriter writer = new FileWriter("lego_model_labels.csv");
+        FileWriter writer = new FileWriter(AiModelHelper.LABEL_FILE_NAME);
         List<String> test = trainIter.getLabels();
 
         String collect = String.join(",", test);
