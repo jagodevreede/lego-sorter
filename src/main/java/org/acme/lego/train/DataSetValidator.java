@@ -21,6 +21,7 @@ public class DataSetValidator {
     public static void main(String[] args) {
         Loader.load(opencv_java.class);
         new DataSetValidator().start();
+        System.exit(0);
     }
 
     private void start() {

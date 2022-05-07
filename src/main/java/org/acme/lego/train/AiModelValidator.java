@@ -12,6 +12,8 @@ import org.opencv.imgcodecs.Imgcodecs;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -23,6 +25,7 @@ public class AiModelValidator {
 
     private final AiModelHelper modelHelper = new AiModelHelper(modelFolder);
     private final ComputationGraph model;
+    private final Map<String, Map<String, Integer>> resultMatrix = new HashMap<>();
 
     public static void main(String[] args) throws Exception {
         Loader.load(opencv_java.class);
@@ -36,12 +39,22 @@ public class AiModelValidator {
 
     private void start() {
         System.out.println("");
-        File baseFolder = new File(LegoDataSetIterator.DATA_DIR);
+        //File baseFolder = new File(LegoDataSetIterator.DATA_DIR);
+        File baseFolder = new File("./povray/real");
         Stream.of(Objects.requireNonNull(baseFolder.listFiles()))
                 .filter(File::isDirectory)
                 .flatMap(p -> Stream.of(Objects.requireNonNull(p.listFiles()))
                         .filter(f -> f.isFile() && f.getName().endsWith(".png")))
-                .forEach(this::testImg);   
+                .forEach(this::testImg);
+
+        // create confusion matrix
+        System.out.println("");
+        System.out.println("Confusion Matrix:");
+        resultMatrix.entrySet().stream()
+                .map(e -> e.getKey() + ": " + e.getValue().entrySet().stream()
+                        .map(ee -> ee.getKey() + "=" + ee.getValue()).collect(Collectors.joining(", ")))
+                        .forEach(System.out::println);
+        System.exit(0);
     }
 
     private void testImg(File file) {
@@ -56,6 +69,10 @@ public class AiModelValidator {
             var predictions = modelHelper.decodePredictions(output[0]);
             String decodePredictions = predictions.stream().map(Record::toString)
                     .collect(Collectors.joining(", "));
+            Map<String, Integer> resultsMatrix = resultMatrix.computeIfAbsent(actualLabel, k -> new HashMap<>());
+            Integer count = resultsMatrix.getOrDefault(predictions.get(0).label(), 0);
+            resultsMatrix.put(predictions.get(0).label(), ++count);
+
             if (!actualLabel.equals(predictions.get(0).label())) {
                 System.out.println("\n" + actualLabel + "\n\t" + decodePredictions);
                 Mat frame = Imgcodecs.imread(file.getAbsolutePath());
