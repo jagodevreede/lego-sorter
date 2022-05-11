@@ -1,12 +1,12 @@
 package org.acme.lego;
 
+import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.opencv.opencv_java;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Rect;
 import org.opencv.highgui.HighGui;
-import org.slf4j.Logger;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -17,9 +17,9 @@ import java.net.URL;
 
 import static org.opencv.imgcodecs.Imgcodecs.imwrite;
 
+@Slf4j
 public class CamTester {
-    private static final Logger log = org.slf4j.LoggerFactory.getLogger(CamTester.class);
-    public static final String CAPTURE_URL = "http://192.168.1.209/capture";
+    public static final String CAPTURE_URL = "http://192.168.178.140/capture";
     public static final File SAMPLES_FOLDER = new File("./samples");
 
     public static void main(String[] args) {
@@ -35,7 +35,7 @@ public class CamTester {
             imwrite(new File(SAMPLES_FOLDER, System.currentTimeMillis() + ".png").getAbsolutePath(), cropped);
 
             HighGui.imshow("Cam1", cropped);
-            HighGui.waitKey();
+            HighGui.waitKey(1000);
 
         }
     }
