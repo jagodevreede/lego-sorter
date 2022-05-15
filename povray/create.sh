@@ -1,8 +1,8 @@
 #!/bin/bash
-if [ "$#" -ne 2 ]; then
+if [ "$#" -ne 3 ]; then
     echo "Illegal number of parameters"
-    echo "Start script: create.sh part_number number_of_images"
-    echo "Example: create.sh 3006 5"
+    echo "Start script: create.sh part_number number_of_images postfix"
+    echo "Example: create.sh 3006 5 run2"
 fi
 
 DISABLE_AUTO_TITLE="true"
@@ -44,13 +44,13 @@ function create_img {
     rot_Y="$(awk -v min=0 -v max=359 -v seed=$RANDOM 'BEGIN{srand(seed); print int(min+rand()*(max-min+1))}')"
     rot_Z="$(awk -v min=0 -v max=359 -v seed=$RANDOM 'BEGIN{srand(seed); print int(min+rand()*(max-min+1))}')"
 
-    pos_X="$(awk -v min=-0.5 -v max=0.5 -v seed=$RANDOM 'BEGIN{srand(seed); print min+rand()*(max-min+1)}')"
-    pos_Y="$(awk -v min=-0.8 -v max=0.8 -v seed=$RANDOM 'BEGIN{srand(seed); print min+rand()*(max-min+1)}')"
+    pos_X="$(awk -v min=-0.4 -v max=0.4 -v seed=$RANDOM 'BEGIN{srand(seed); print min+rand()*(max-min+1)}')"
+    pos_Y="$(awk -v min=-0.7 -v max=0.7 -v seed=$RANDOM 'BEGIN{srand(seed); print min+rand()*(max-min+1)}')"
 
     # Base cam position //< 0,-2, 4 >
     cam_X="$(awk -v min=-0.2 -v max=0.2 -v seed=$RANDOM 'BEGIN{srand(seed); print min+rand()*(max-min+1)}')"
     cam_Y="$(awk -v min=-2.1 -v max=-1.9 -v seed=$RANDOM 'BEGIN{srand(seed); print min+rand()*(max-min+1)}')"
-    cam_Z="$(awk -v min=3.9 -v max=4.5 -v seed=$RANDOM 'BEGIN{srand(seed); print min+rand()*(max-min+1)}')"
+    cam_Z="$(awk -v min=3.9 -v max=5 -v seed=$RANDOM 'BEGIN{srand(seed); print min+rand()*(max-min+1)}')"
 
     sed -i .bak "s/<CAMLOC>/<$cam_X, $cam_Y, $cam_Z>/" header.inc.bak
 
@@ -65,7 +65,7 @@ function create_img {
     rm *.bak
 
     povray +L${LGEO_FOLDER}/lg +L${LGEO_FOLDER} +L${LGEO_FOLDER}/ar +W${RENDER_SIZE} +H${RENDER_SIZE} -GA +WL0 $1.pov
-    mv $1.png $1/$1-$2.png
+    mv $1.png $1/$1-$2-$3.png
 }
 
 mkdir -p $1
@@ -73,9 +73,9 @@ mkdir -p bricks/$1
 
 for (( i=0; i<$2; i++ ))
 do
-	create_img $1 $i
-  magick $1/$1-$i.png +noise Impulse -attenuate 0.2 -resize 'x224' -gaussian-blur 50  ./bricks/$1/$1-$i.png &
-  echo "Created $1 #$2"
+	create_img $1 $i $3
+  magick $1/$1-$i-$3.png +noise Impulse -attenuate 0.2 -resize 'x224' -gaussian-blur 50  ./bricks/$1/$1-$i-$3.png &
+  echo "Created $1 #$2-$3"
   echo -en "\033]0; $1 $i \a"
 done
 

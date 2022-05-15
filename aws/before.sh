@@ -2,6 +2,7 @@
 
 # This scripts runs on the local machine, after the instance is running, but before the ontarget.sh
 
+rm training_data.tar.gz
 tar -zcvf training_data.tar.gz ../povray/bricks
 tar --exclude "../target" --exclude "../povray" --exclude "../lego_model.zip" --exclude "../aws" -czvf code.tar.gz ../
 
