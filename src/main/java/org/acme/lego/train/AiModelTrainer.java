@@ -2,12 +2,13 @@ package org.acme.lego.train;
 
 import org.acme.lego.util.AiModelHelper;
 import org.deeplearning4j.core.storage.StatsStorage;
-import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.transferlearning.FineTuneConfiguration;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.model.stats.StatsListener;
 import org.deeplearning4j.ui.model.storage.InMemoryStatsStorage;
@@ -48,22 +49,24 @@ public class AiModelTrainer {
         //In cases where there already exists a setting the fine tune setting will
         //  override the setting for all layers that are not "frozen".
         FineTuneConfiguration fineTuneConf = new FineTuneConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(new Nesterovs(5e-5))
                 .seed(seed)
                 .build();
+
 
         //Construct a new model with the intended architecture and print summary
         ComputationGraph vgg16Transfer = new TransferLearning.GraphBuilder(vgg16)
                 .fineTuneConfiguration(fineTuneConf)
                 .setFeatureExtractor(featureExtractionLayer) //the specified layer and below are "frozen"
-                .removeVertexKeepConnections("predictions") //replace the functionality of the final vertex
+                .removeVertexKeepConnections("predictions")
                 .addLayer("predictions",
                         new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                 .nIn(4096).nOut(numClasses)
-                                .weightInit(new NormalDistribution(0, 0.2 * (2.0 / (4096 + numClasses)))) //This weight init dist gave better results than Xavier
-                                .activation(Activation.SOFTMAX).build(),
-                        "fc2")
+                                .weightInit(WeightInit.XAVIER)
+                                .activation(Activation.SOFTMAX).build(), featureExtractionLayer)
                 .build();
+
         return vgg16Transfer;
     }
 
