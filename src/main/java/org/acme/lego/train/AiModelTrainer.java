@@ -35,8 +35,8 @@ public class AiModelTrainer {
     protected static final long seed = 12345;
 
     private static final int trainPerc = 80;
-    private static final int batchSize = 32;
-    private static final int trainForIter = 1000;
+    private static final int batchSize = 16;
+    private static final int trainEpochs = 10;
 
     private static ComputationGraph createVgg16Model() throws IOException {
         final String featureExtractionLayer = "fc2";
@@ -102,8 +102,8 @@ public class AiModelTrainer {
         log.info("Starting Ai model trainer for lego with {} bricks", numClasses);
         final long startTime = System.currentTimeMillis();
 
-        //ComputationGraph transferGraph = createVgg16Model();
-        ComputationGraph transferGraph = createResNet();
+        ComputationGraph transferGraph = createVgg16Model();
+        //ComputationGraph transferGraph = createResNet();
         log.info(transferGraph.summary());
 
         UIServer uiServer = UIServer.getInstance();
@@ -140,9 +140,8 @@ public class AiModelTrainer {
         trainIter.reset();
         log.info("Total train iters: " + totalIters);
 
-        int trainedIters = 0;
         int e = 1;
-        while (trainedIters <= trainForIter) {
+        while (e < trainEpochs) {
             int iter = 0;
             while (trainIter.hasNext()) {
                 log.info(e + " Start train iter " + iter + "/" + totalIters + ".... score: " + transferGraph.score());
@@ -154,14 +153,13 @@ public class AiModelTrainer {
 //                testIter.reset();
 //            }
                 iter++;
-                trainedIters++;
             }
             log.info(e + " Evaluate model score " + transferGraph.score() + " at iter " + iter + "/" + totalIters + " ....  in " + (System.currentTimeMillis() - startTime) / 1000 + "sec");
             eval = transferGraph.evaluate(testIter);
             log.info(eval.stats());
             testIter.reset();
             trainIter.reset();
-            transferGraph.save(new File("lego_model_e" + e + ".zip"));
+           // transferGraph.save(new File("lego_model_e" + e + ".zip"));
             e++;
         }
 

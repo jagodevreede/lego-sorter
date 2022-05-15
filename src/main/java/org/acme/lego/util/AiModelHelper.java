@@ -3,6 +3,7 @@ package org.acme.lego.util;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.VGG16ImagePreProcessor;
+import org.nd4j.linalg.dataset.api.preprocessor.VGG16ImagePreProcessor;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
@@ -23,9 +24,9 @@ public class AiModelHelper {
     private final String[] labels;
 
     // VGG16
-    public final static DataNormalization PRE_PROCESSOR = new VGG16ImagePreProcessor();
+    public static final DataNormalization PRE_PROCESSOR = new VGG16ImagePreProcessor();
     // RESNET
-    //public final static DataNormalization PRE_PROCESSOR = new ImagePreProcessingScaler();
+    //public static final DataNormalization PRE_PROCESSOR = new ImagePreProcessingScaler();
 
     public AiModelHelper(File folder) {
         this.labels = loadLabels(folder);
