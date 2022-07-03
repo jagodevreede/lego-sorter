@@ -15,7 +15,7 @@ import java.util.stream.Stream;
  * Util that removes images from data set that contain no blocks. or block that are barely visible.
  */
 public class DataSetValidator {
-
+    private final static int MAX_IMAGES = 850;
     private final Map<File, Double> fileContourSizes = new HashMap<>();
     private final Map<String, List<File>> filePerLabel = new HashMap<>();
 
@@ -48,6 +48,17 @@ public class DataSetValidator {
                 }
             });
         });
+
+        // limit folder size to MAX_IMAGES
+        Stream.of(Objects.requireNonNull(baseFolder.listFiles()))
+                .filter(File::isDirectory)
+                .forEach(folder -> {
+                    List<File> files = Arrays.asList(Objects.requireNonNull(folder.listFiles()));
+                    files.sort(Comparator.comparing(File::getName));
+                    if (files.size() > MAX_IMAGES) {
+                        files.subList(MAX_IMAGES, files.size()).forEach(File::delete);
+                    }
+                });
     }
 
     private boolean testImg(File file) {

@@ -20,13 +20,6 @@ information regarding copyright ownership.
   -->
 
 <configuration>
-    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-        <file>logs/application.log</file>
-        <encoder>
-            <pattern>%date - [%level] - from %logger in %thread
-                %n%message%n%xException%n</pattern>
-        </encoder>
-    </appender>
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -40,11 +33,8 @@ information regarding copyright ownership.
     <logger name="org.nd4j" level="INFO" />
     <logger name="org.acme" level="INFO" />
 
-
-
     <root level="ERROR">
         <appender-ref ref="STDOUT" />
-        <appender-ref ref="FILE" />
     </root>
 
 </configuration>

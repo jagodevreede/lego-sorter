@@ -19,7 +19,7 @@ import static org.opencv.imgcodecs.Imgcodecs.imwrite;
 
 public class CamTester {
     private static final Logger log = org.slf4j.LoggerFactory.getLogger(CamTester.class);
-    public static final String CAPTURE_URL = "http://192.168.1.209/capture";
+    public static final String CAPTURE_URL = "http://192.168.178.88/capture";
     public static final File SAMPLES_FOLDER = new File("./samples");
 
     public static void main(String[] args) {
@@ -30,12 +30,12 @@ public class CamTester {
         while (true) {
             Mat mat = getImage();
 
-            Mat cropped = crop(mat);
+           // Mat cropped = crop(mat);
 
-            imwrite(new File(SAMPLES_FOLDER, System.currentTimeMillis() + ".png").getAbsolutePath(), cropped);
+            imwrite(new File(SAMPLES_FOLDER, System.currentTimeMillis() + ".png").getAbsolutePath(), mat);
 
-            HighGui.imshow("Cam1", cropped);
-            HighGui.waitKey();
+            HighGui.imshow("Cam1", mat);
+            HighGui.waitKey(1);
 
         }
     }

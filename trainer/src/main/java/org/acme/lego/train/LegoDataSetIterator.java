@@ -36,7 +36,7 @@ import java.util.Random;
 import static org.acme.lego.util.AiModelHelper.*;
 
 public class LegoDataSetIterator {
-    public static final String DATA_DIR = "./povray/bricks";
+    public static final String DATA_DIR = "./povray/cropped";
 
     private static final String[] allowedExtensions = BaseImageLoader.ALLOWED_FORMATS;
     private static final Random rng = new Random(13);

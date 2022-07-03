@@ -6,6 +6,10 @@
 #declare LDXCameraLookAt = < 0,0,0 >; // Camera look-at point vector
 #declare LDXCameraSky = < 0,-1, 0 >; // Camera sky vector (<0,-1,0> will usually work for standard "up")
 #declare LDXCameraAngle = 0;
+#declare LDXBackground = 1;
+#declare LDXBgR = <LDXBgR>; 	// Background Red
+#declare LDXBgG = <LDXBgG>;	// Background Green
+#declare LDXBgB = <LDXBgB>;	// Background Blue
 // Disable default lights
 #declare LDXSkipLight1 = 1;
 #declare LDXSkipLight2 = 1;

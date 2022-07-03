@@ -3,6 +3,7 @@ package org.acme.lego.train;
 import org.acme.lego.util.AiModelHelper;
 import org.deeplearning4j.core.storage.StatsStorage;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -57,6 +58,7 @@ public class AiModelTrainer {
 
         //Construct a new model with the intended architecture and print summary
         ComputationGraph vgg16Transfer = new TransferLearning.GraphBuilder(vgg16)
+                .setWorkspaceMode(WorkspaceMode.ENABLED)
                 .fineTuneConfiguration(fineTuneConf)
                 .setFeatureExtractor(featureExtractionLayer) //the specified layer and below are "frozen"
                 .removeVertexKeepConnections("predictions")
