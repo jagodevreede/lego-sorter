@@ -38,4 +38,16 @@ public class RebrickableDatabase {
                 .setMaxResults(1000)
                 .getResultList();
     }
+
+    public List<String> getColorsForPart(String part) {
+        return entityManager.createNativeQuery("""
+                select distinct(c.name) from inventoryparts i
+                right join colors c on i.colorId = c.id
+                where partnum = :part
+               """)
+                .setParameter("part", part)
+                // Stupid hack to get nice string list, as datatype string is not known by hibernate
+                .getResultStream()
+                .map(o -> o.toString()).toList();
+    }
 }

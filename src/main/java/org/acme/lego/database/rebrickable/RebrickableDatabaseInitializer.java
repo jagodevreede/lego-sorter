@@ -95,17 +95,9 @@ public class RebrickableDatabaseInitializer {
     }
 
     @Transactional
-    void insertBatch(List<InventoryParts> batch ) {
+    void insertBatch(List<InventoryParts> batch) {
         for (InventoryParts inventoryParts : batch) {
             inventoryParts.persist();
-            /*Query nativeQuery = entityManager.createNativeQuery("INSERT INTO inventoryparts (id, inventoryid, partnum, colorid, quantity, isspare) VALUES (:id, :inventory_id, :part_num, :color_id, :quantity, :is_spare)");
-            nativeQuery.setParameter("id", idCounter.incrementAndGet());
-            nativeQuery.setParameter("inventory_id", inventoryParts.getInventoryId());
-            nativeQuery.setParameter("part_num", inventoryParts.getPartNum());
-            nativeQuery.setParameter("color_id", inventoryParts.getColorId());
-            nativeQuery.setParameter("quantity", inventoryParts.getQuantity());
-            nativeQuery.setParameter("is_spare", inventoryParts.isSpare());
-            nativeQuery.executeUpdate();*/
         }
         entityManager.flush();
         entityManager.clear();
