@@ -42,6 +42,8 @@ public class RebrickableDatabaseInitializer {
         loadColors();
         loadInventoryParts();
         loadInventories();
+        loadSets();
+        loadPartRelationship();
         log.info("Loaded rebrickable database in {}ms", Duration.ofNanos(System.nanoTime() - startTime).toMillis());
     }
 
@@ -175,6 +177,46 @@ public class RebrickableDatabaseInitializer {
                     .partNum(record.get("part_num"))
                     .partCategoryId(Short.parseShort(record.get("part_cat_id")))
                     .name(record.get("name"))
+                    .build();
+            entity.persist();
+        }
+    }
+
+    @Transactional
+    @SneakyThrows
+    void loadSets() {
+        if (Sets.count() > 0) {
+            log.debug("Sets already loaded");
+            return;
+        }
+        log.info("Loading sets");
+        Iterable<CSVRecord> records = getCsvRecords("sets.csv");
+        for (CSVRecord record : records) {
+            val entity = Sets.builder()
+                    .numParts(Short.parseShort(record.get("num_parts")))
+                    .year(Short.parseShort(record.get("year")))
+                    .themeId(Short.parseShort(record.get("theme_id")))
+                    .setNum(record.get("set_num"))
+                    .name(record.get("name"))
+                    .build();
+            entity.persist();
+        }
+    }
+
+    @Transactional
+    @SneakyThrows
+    void loadPartRelationship() {
+        if (PartRelationship.count() > 0) {
+            log.debug("PartRelationship already loaded");
+            return;
+        }
+        log.info("Loading PartRelationship");
+        Iterable<CSVRecord> records = getCsvRecords("part_relationships.csv");
+        for (CSVRecord record : records) {
+            val entity = PartRelationship.builder()
+                    .relType(record.get("rel_type"))
+                    .childPartNum(record.get("child_part_num"))
+                    .parentPartNum(record.get("parent_part_num"))
                     .build();
             entity.persist();
         }

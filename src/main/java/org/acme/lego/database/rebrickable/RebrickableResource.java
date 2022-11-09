@@ -7,6 +7,8 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -36,4 +38,18 @@ public class RebrickableResource {
                 ")";
     }
 
+    @GET
+    @Path("createColorFiles")
+    public void createColorFiles() {
+        List<String> popularParts = rebrickableDatabase.getPopularParts();
+        popularParts.forEach(pp -> {
+            System.out.println(pp);
+            String colorsForPart = getColorsForPart(pp);
+            try (PrintWriter out = new PrintWriter("color_" + pp + ".sh")) {
+                out.println(colorsForPart);
+            } catch (IOException ioException) {
+                ioException.printStackTrace();
+            }
+        });
+    }
 }

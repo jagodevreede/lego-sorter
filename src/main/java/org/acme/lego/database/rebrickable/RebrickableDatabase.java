@@ -30,13 +30,24 @@ public class RebrickableDatabase {
     @SuppressWarnings("unchecked")
     public List<String> getPopularParts() {
         return entityManager.createNativeQuery("""
-                select s.partnum from (select partnum, sum(quantity) as total, count(inventoryid) as sets from inventoryparts i
-                group by partnum) as s
-                where s.total > 280
-                order by s.sets desc
-                """, String.class)
+                        select s.partnum from (
+                             select i.partnum, sum(quantity) as total, count(inventoryid) as sets from inventoryparts i
+                             left join inventories iv on i.inventoryId = iv.id
+                             left join sets s on iv.setNum = s.setNum
+                             left join parts p on i.partnum = p.partnum
+                             where (s.year > 1985 OR s.year IS NULL)
+                             and i.isspare <> true
+                             and p.partcategoryid NOT IN (3, 17, 24, 27, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65)
+                             group by i.partnum
+                        ) s
+                        left join partrelationship pr on partnum = pr.childpartnum
+                        where s.total > 50
+                        and (pr.reltype is null)
+                        order by s.sets desc
+                        """)
                 .setMaxResults(1000)
-                .getResultList();
+                .getResultStream()
+                .map(o -> o.toString()).toList();
     }
 
     public List<String> getColorsForPart(String part) {
