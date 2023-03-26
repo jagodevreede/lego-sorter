@@ -1,0 +1,1 @@
+brick_colors=("lg_blue" "lg_bright_light_orange" "lg_flat_silver" "lg_pearl_dark_gray" "lg_pearl_gold" "lg_red" "lg_trans-bright_green" "lg_trans-light_blue" "lg_trans-neon_orange" "lg_yellow" "lg_yellowish_green")

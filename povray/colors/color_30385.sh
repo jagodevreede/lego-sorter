@@ -1,0 +1,1 @@
+brick_colors=("lg_chrome_green" "lg_chrome_silver" "lg_flat_silver" "lg_glitter_trans-light_blue" "lg_metallic_gold" "lg_metallic_silver" "lg_pearl_gold" "lg_trans-bright_green" "lg_trans-dark_blue" "lg_trans-dark_pink" "lg_trans-green" "lg_trans-light_blue" "lg_trans-medium_blue" "lg_trans-neon_green" "lg_trans-orange" "lg_trans-red" "lg_yellow")

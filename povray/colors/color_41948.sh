@@ -1,0 +1,1 @@
+brick_colors=("lg_bright_pink" "lg_dark_azure" "lg_dark_turquoise" "lg_green" "lg_lavender" "lg_light_aqua" "lg_lime" "lg_magenta" "lg_medium_azure" "lg_medium_lavender" "lg_medium_nougat" "lg_olive_green" "lg_tan" "lg_white" "lg_yellowish_green")

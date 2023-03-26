@@ -1,0 +1,1 @@
+brick_colors=("lg_blue" "lg_bright_green" "lg_bright_light_blue" "lg_bright_light_yellow" "lg_dark_bluish_gray" "lg_dark_tan" "lg_light_bluish_gray" "lg_lime" "lg_magenta" "lg_medium_azure" "lg_red" "lg_reddish_brown" "lg_tan" "lg_very_light_gray" "lg_white" "lg_yellow")
