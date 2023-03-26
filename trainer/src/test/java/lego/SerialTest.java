@@ -1,4 +1,4 @@
-package org.acme.lego;
+package lego;
 
 import com.fazecast.jSerialComm.SerialPort;
 

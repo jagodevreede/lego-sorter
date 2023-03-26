@@ -57,18 +57,17 @@ public class DataSetValidator {
         Mat mask = new Mat();
         Mat morphOutput = new Mat();
 
-// remove some noise
+        // remove some noise
         Imgproc.blur(frame, blurredImage, new Size(7, 7));
 
-// convert the frame to HSV
+        // convert the frame to HSV
         Imgproc.cvtColor(blurredImage, hsvImage, Imgproc.COLOR_BGR2HSV);
 
-        // get thresholding values from the UI
-// remember: H ranges 0-180, S and V range 0-255
+        // remember: H ranges 0-180, S and V range 0-255
         Scalar minValues = new Scalar(2, 10, 30);
         Scalar maxValues = new Scalar(180, 255, 255);
 
-// threshold HSV image to select tennis balls
+        // threshold HSV image to select tennis balls
         Core.inRange(hsvImage, minValues, maxValues, mask);
 
         Mat dilateElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(24, 24));
