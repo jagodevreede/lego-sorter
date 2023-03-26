@@ -1,8 +1,5 @@
 package org.acme.lego.preprocessing;
 
-import org.bytedeco.javacpp.Loader;
-import org.bytedeco.opencv.opencv_java;
-import org.jetbrains.annotations.NotNull;
 import org.opencv.core.*;
 import org.opencv.highgui.HighGui;
 import org.opencv.imgcodecs.Imgcodecs;
@@ -15,6 +12,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 public class ImagePreProcessor {
+    static {
+        nu.pattern.OpenCV.loadLocally();
+    }
     public static final int FILES_TO_KEEP = 1500;
     public static final String BASE_FOLDER = "povray/";
 
@@ -29,13 +29,13 @@ public class ImagePreProcessor {
     private final Map<String, Double> sizePerFile = new ConcurrentHashMap<>();
 
     public static void main(String[] args) {
-        Loader.load(opencv_java.class);
         new ImagePreProcessor().start();
     }
 
     private void start() {
         File baseFolder = new File(BASE_FOLDER);
         getStreamOfObjectFolders(baseFolder)
+                .limit(10)
                 .flatMap(p -> {
                     new File(POVRAY_CROPPED + p.getName()).mkdirs();
                     return getStreamOfImagesInFolder(p);
@@ -69,7 +69,6 @@ public class ImagePreProcessor {
 
     private Stream<File> getStreamOfImagesInFolder(File folder) {
         return Stream.of(Objects.requireNonNull(folder.listFiles()))
-//                .filter(f -> f.isFile() && f.getName().equals("3002-117-run0.png"))
                 .filter(f -> f.isFile() && f.getName().endsWith(".png"));
     }
 
@@ -79,8 +78,7 @@ public class ImagePreProcessor {
                 .filter(f -> !f.getName().equals("cropped"))
                 .filter(f -> !f.getName().equals("old"))
                 .filter(f -> !f.getName().equals("colors"))
-                .filter(f -> !f.getName().equals("pov"))
-                .filter(f -> f.getName().equals("3002"));
+                .filter(f -> !f.getName().equals("pov"));
     }
 
     private void testProcess(File f) {
@@ -165,7 +163,6 @@ public class ImagePreProcessor {
         return null;
     }
 
-    @NotNull
     private Mat getCleanedUpMat(Mat mask) {
         Mat temp1 = new Mat();
         Mat temp2 = new Mat();

@@ -7,7 +7,6 @@ import lombok.val;
 import org.acme.lego.database.rebrickable.model.*;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
-import org.jetbrains.annotations.NotNull;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -222,7 +221,6 @@ public class RebrickableDatabaseInitializer {
         }
     }
 
-    @NotNull
     private Iterable<CSVRecord> getCsvRecords(String csvFile) throws IOException {
         Reader in = new FileReader(dbFolder.getAbsolutePath() + "/" + csvFile);
         return CSVFormat.RFC4180.builder().setHeader()

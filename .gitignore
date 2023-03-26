@@ -72,4 +72,5 @@ hs_err_pid*
 .idea/
 old/
 node_modules/
+model/
 .angular

@@ -1,8 +1,6 @@
 package lego;
 
 import lombok.extern.slf4j.Slf4j;
-import org.bytedeco.javacpp.Loader;
-import org.bytedeco.opencv.opencv_java;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Rect;
@@ -25,7 +23,7 @@ public class CamTester {
     public static void main(String[] args) {
         log.info("Starting");
         SAMPLES_FOLDER.mkdirs();
-        Loader.load(opencv_java.class);
+//        Loader.load(opencv_java.class);
         log.info("Loading opencv done");
         while (true) {
             Mat mat = getImage();
