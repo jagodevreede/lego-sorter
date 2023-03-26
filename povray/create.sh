@@ -59,6 +59,13 @@ then
     ${LDVIEW_FOLDER}/LDView ${PARTS_FOLDER}$1.dat -ExportFile=$1_org.pov
 fi
 
+Z_HEIGHT_MIN=17
+Z_HEIGHT_MAX=25
+if grep -q LDX_$1 "$1_org.pov"; then
+  Z_HEIGHT_MIN=250
+  Z_HEIGHT_MAX=275
+fi
+
 function create_img {
   cp header.inc header.inc-$1.bak
 
@@ -76,13 +83,13 @@ function create_img {
   # Base cam position //< 0,-2, 4 >
   cam_X="$(awk -v min=-0.2 -v max=0.2 -v seed=$RANDOM 'BEGIN{srand(seed); print min+rand()*(max-min+1)}')"
   cam_Y="$(awk -v min=-2.1 -v max=-1.9 -v seed=$RANDOM 'BEGIN{srand(seed); print min+rand()*(max-min+1)}')"
-  cam_Z="$(awk -v min=17 -v max=25 -v seed=$RANDOM 'BEGIN{srand(seed); print min+rand()*(max-min+1)}')"
+  cam_Z="$(awk -v min=$Z_HEIGHT_MIN -v max=$Z_HEIGHT_MAX -v seed=$RANDOM 'BEGIN{srand(seed); print min+rand()*(max-min+1)}')"
 
   sed -i .bak "s/<CAMLOC>/<$cam_X, $cam_Y, $cam_Z>/" header.inc-$1.bak
 
   sed "/^#version.*/ r header.inc-$1.bak" $1_org.pov > $1.pov
 
-    sed -i .bak "s/lg_$1$/&\\
+  sed -i .bak "s/{ LDXColor7 }/&\\
     rotate<$rot_X,$rot_Y,$rot_Z>\\
     translate <$pos_X, $pos_Y, 0>/" $1.pov
 
