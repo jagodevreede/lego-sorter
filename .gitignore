@@ -74,3 +74,4 @@ old/
 node_modules/
 model/
 .angular
+dependency-reduced-pom.xml

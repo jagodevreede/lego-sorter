@@ -21,6 +21,7 @@ import ai.djl.repository.zoo.ModelNotFoundException;
 import ai.djl.training.DefaultTrainingConfig;
 import ai.djl.training.Trainer;
 import ai.djl.training.TrainingConfig;
+import ai.djl.training.TrainingResult;
 import ai.djl.training.dataset.RandomAccessDataset;
 import ai.djl.training.evaluator.Accuracy;
 import ai.djl.training.listener.TrainingListener;
@@ -35,6 +36,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.acme.lego.preprocessing.ImagePreProcessor.POVRAY_CROPPED;
@@ -42,6 +44,8 @@ import static org.acme.lego.util.AiModelHelper.*;
 
 @Slf4j
 public class Learning {
+
+    private static final AtomicInteger epochs = new AtomicInteger(0);
 
     public static void main(String[] args) throws Exception {
         log.info("Starting to learn");
@@ -55,11 +59,14 @@ public class Learning {
 
             trainer.initialize(new Shape(1, channels, width, height));
 
+            final long startTime = System.currentTimeMillis();
+
             AtomicReference<Double> bestValidationLoss = new AtomicReference<>(99999.9);
             EarlyStoppingFit earlyStoppingFit =
                     new EarlyStoppingFit(20, 0.2, 3,
                             9 * 60, 0.1, 3);
             earlyStoppingFit.addCallback((m, epoch, validationLoss) -> {
+                epochs.incrementAndGet();
                 try {
                     if (validationLoss < bestValidationLoss.get()) {
                         model.save(modelDir, "lego-e-" + epoch + "-v-" + validationLoss);
@@ -71,8 +78,18 @@ public class Learning {
             });
             earlyStoppingFit.fit(trainer, datasets[0], datasets[1]);
 
+            log.info("Model build complete in " + (System.currentTimeMillis() - startTime) / 1000 + "sec");
+
+            // set model properties
+            TrainingResult result = trainer.getTrainingResult();
+            model.setProperty("Epoch", String.valueOf(epochs.get()));
+            model.setProperty("Accuracy", String.format("%.5f", result.getValidateEvaluation("Accuracy")));
+            model.setProperty("Loss", String.format("%.5f", result.getValidateLoss()));
+
             model.save(modelDir, "lego");
             saveLabels(modelDir, dataset.getSynset());
+
+            log.info("Total build complete in " + (System.currentTimeMillis() - startTime) / 1000 + "sec");
         }
     }
 
