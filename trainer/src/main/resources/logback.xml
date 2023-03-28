@@ -6,10 +6,20 @@
         </encoder>
     </appender>
 
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <file>learning.log</file>
+        <append>false</append>
+        <encoder>
+            <pattern>%date{HH:mm:ss} %logger{15} - %message%n%xException{5}</pattern>
+        </encoder>
+    </appender>
+
     <logger name="org.acme" level="INFO" />
+    <logger name="ai.djl" level="INFO" />
 
     <root level="INFO">
         <appender-ref ref="STDOUT" />
+        <appender-ref ref="FILE" />
     </root>
 
 </configuration>

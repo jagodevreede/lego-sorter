@@ -5,6 +5,7 @@ import ai.djl.MalformedModelException;
 import ai.djl.Model;
 import ai.djl.basicdataset.cv.classification.ImageFolder;
 import ai.djl.basicmodelzoo.cv.classification.ResNetV1;
+import ai.djl.metric.Metric;
 import ai.djl.metric.Metrics;
 import ai.djl.modality.Classifications;
 import ai.djl.modality.cv.Image;
@@ -35,7 +36,9 @@ import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -63,8 +66,8 @@ public class Learning {
 
             AtomicReference<Double> bestValidationLoss = new AtomicReference<>(99999.9);
             EarlyStoppingFit earlyStoppingFit =
-                    new EarlyStoppingFit(20, 0.2, 3,
-                            9 * 60, 0.1, 3);
+                    new EarlyStoppingFit(25, 0.02, 3,
+                            9 * 60, 1, 5);
             earlyStoppingFit.addCallback((m, epoch, validationLoss) -> {
                 epochs.incrementAndGet();
                 try {
@@ -90,6 +93,30 @@ public class Learning {
             saveLabels(modelDir, dataset.getSynset());
 
             log.info("Total build complete in " + (System.currentTimeMillis() - startTime) / 1000 + "sec");
+
+            printStatisticsPerEpoch(trainer);
+        }
+    }
+
+    private static void printStatisticsPerEpoch(Trainer trainer) {
+        Metrics metrics = trainer.getMetrics();
+        Map<String, double[]> evaluatorMetrics = new HashMap<>();
+        trainer.getEvaluators()
+                .forEach(evaluator -> {
+                    evaluatorMetrics.put("train_epoch_" + evaluator.getName(), metrics.getMetric("train_epoch_" + evaluator.getName()).stream()
+                            .mapToDouble(Metric::getValue).toArray());
+                    evaluatorMetrics.put("validate_epoch_" + evaluator.getName(), metrics.getMetric("validate_epoch_" + evaluator.getName()).stream()
+                            .mapToDouble(Metric::getValue).toArray());
+                });
+
+        double[] trainLoss = evaluatorMetrics.get("train_epoch_SoftmaxCrossEntropyLoss");
+        double[] testLoss = evaluatorMetrics.get("validate_epoch_SoftmaxCrossEntropyLoss");
+        double[] trainAccuracy = evaluatorMetrics.get("train_epoch_Accuracy");
+        double[] testAccuracy = evaluatorMetrics.get("validate_epoch_Accuracy");
+
+        log.info("epoch,train loss,test loss,train accuracy,test accuracy");
+        for (int i = 0; i < trainAccuracy.length; i++) {
+            log.info(i + 1 + "," + trainLoss[i] + "," + testLoss[i] + "," + trainAccuracy[i] + "," + testAccuracy[i]);
         }
     }
 
@@ -111,9 +138,9 @@ public class Learning {
         Model model = Model.newInstance("lego");
 
         Block resNet50 = ResNetV1.builder()
-                .setImageShape(new Shape(3, 224, 224))
+                .setImageShape(new Shape(channels, width, height))
                 .setNumLayers(50)
-                .setOutSize(2)
+                .setOutSize(10)
                 .build();
 
         model.setBlock(resNet50);
@@ -149,8 +176,6 @@ public class Learning {
         builder.optFilter("flavor", "v1");
         return builder;
     }
-
-
 
 
     private static ImageFolder loadDataset(String folder) throws IOException {
