@@ -35,36 +35,36 @@ public class ImagePreProcessor {
     private void start() {
         File baseFolder = new File(BASE_FOLDER);
         getStreamOfObjectFolders(baseFolder)
-                .limit(10)
-                .flatMap(p -> {
-                    new File(POVRAY_CROPPED + p.getName()).mkdirs();
-                    return getStreamOfImagesInFolder(p);
-                })
-                .parallel()
-                .forEach(this::testProcess);
+                .limit(100)
+                .peek(p -> new File(POVRAY_CROPPED + p.getName()).mkdirs())
+                .forEach(folder -> {
+                    System.gc();
+                    sizePerFile.clear();
+                    List<FileAndSize> fileAndSizes = new ArrayList<>(getStreamOfImagesInFolder(folder)
+                            .parallel()
+                            .peek(this::testProcess)
+                            .filter(file -> sizePerFile.get(file.getAbsolutePath()) != null)
+                            .map(file -> {
+                                double size = sizePerFile.get(file.getAbsolutePath());
+                                return new FileAndSize(file, size);
+                            })
+                            .sorted(Comparator.comparingDouble(FileAndSize::size))
+                            .toList());
+
+                    if (fileAndSizes.size() > FILES_TO_KEEP) {
+                        fileAndSizes.subList(0, fileAndSizes.size() - FILES_TO_KEEP)
+                                .stream()
+                                .map(FileAndSize::file)
+                                .forEach(file -> {
+                                    File croppedFile = new File(POVRAY_CROPPED + file.getParentFile().toPath().getFileName() + "/" + file.toPath().getFileName());
+                                    System.err.println("Remove " + croppedFile.getAbsolutePath());
+                                    croppedFile.delete();
+                                });
+                    }
+                });
+
 
         counterPerObject.forEach((key, value) -> System.out.println(key + ": " + value.get()));
-        getStreamOfObjectFolders(baseFolder).forEach(folder -> {
-            List<FileAndSize> fileAndSizes = new ArrayList<>(getStreamOfImagesInFolder(folder)
-                    .filter(file -> sizePerFile.get(file.getAbsolutePath()) != null)
-                    .map(file -> {
-                        double size = sizePerFile.get(file.getAbsolutePath());
-                        return new FileAndSize(file, size);
-                    })
-                    .sorted(Comparator.comparingDouble(FileAndSize::size))
-                    .toList());
-
-            if (fileAndSizes.size() > FILES_TO_KEEP) {
-                fileAndSizes.subList(0, fileAndSizes.size() - FILES_TO_KEEP)
-                        .stream()
-                        .map(FileAndSize::file)
-                        .forEach(file -> {
-                            File croppedFile = new File(POVRAY_CROPPED + file.getParentFile().toPath().getFileName() + "/" + file.toPath().getFileName());
-                            System.err.println("Remove " + croppedFile.getAbsolutePath());
-                            croppedFile.delete();
-                        });
-            }
-        });
     }
 
     private Stream<File> getStreamOfImagesInFolder(File folder) {
@@ -92,20 +92,13 @@ public class ImagePreProcessor {
         } else {
             System.out.println("Processed: " + matFile.file.getAbsolutePath());
         }
+        matFile.mat.release();
     }
 
     public Mat preProcess(MatFile matFile) {
         Mat image = matFile.mat();
 
-        Mat blurredImage = new Mat();
-        Mat hsvImage = new Mat();
-        Mat mask = new Mat();
-
-        // remove some noise
-        Imgproc.blur(image, blurredImage, new Size(28, 28));
-
-        // convert the frame to HSV
-        Imgproc.cvtColor(blurredImage, hsvImage, Imgproc.COLOR_BGR2HSV);
+        Mat hsvImage = getCleanedupHsvImage(image);
 
         double[] bgColor = determineBackgroundColor(hsvImage);
         // remember: H ranges 0-180, S and V range 0-255
@@ -114,6 +107,7 @@ public class ImagePreProcessor {
         Scalar minValues = new Scalar(Math.min(0, bgColor[0] - bgColorRange), Math.min(0, bgColor[1] - bgColorRange), Math.min(0, bgColor[2] - bgColorRange));
         Scalar maxValues = new Scalar(Math.min(180, bgColor[0] + bgColorRange), Math.min(255, bgColor[1] + bgColorRange), Math.min(255, bgColor[2] + bgColorRange));
 
+        Mat mask = new Mat();
         // threshold HSV
         Core.inRange(hsvImage, minValues, maxValues, mask);
 
@@ -122,7 +116,10 @@ public class ImagePreProcessor {
 
         Mat morphOutput = getCleanedUpMat(mask);
 
-        Rect rect = getRect(matFile, morphOutput);
+        mask.release();
+        hsvImage.release();
+
+        Rect rect = getRect(matFile.file, morphOutput);
 
         if (rect != null) {
             if (Math.min(rect.x, rect.y) == 0 || rect.x + rect.width == image.cols() || rect.y + rect.height == image.rows()) {
@@ -157,10 +154,24 @@ public class ImagePreProcessor {
 
             // write cropped image to file
             Imgcodecs.imwrite(POVRAY_CROPPED + matFile.file.getParentFile().getName() + "/" + matFile.file.getName(), resizedImage);
+            croppedImage.release();
+            resizedImage.release();
             return image;
         }
 
         return null;
+    }
+
+    private Mat getCleanedupHsvImage(Mat image) {
+        Mat hsvImage = new Mat();
+        Mat blurredImage = new Mat();
+        // remove some noise
+        Imgproc.blur(image, blurredImage, new Size(28, 28));
+
+        // convert the frame to HSV
+        Imgproc.cvtColor(blurredImage, hsvImage, Imgproc.COLOR_BGR2HSV);
+        blurredImage.release();
+        return hsvImage;
     }
 
     private Mat getCleanedUpMat(Mat mask) {
@@ -172,17 +183,18 @@ public class ImagePreProcessor {
         Imgproc.dilate(temp1, temp2, dilateElement);
         Imgproc.dilate(temp2, temp1, dilateElement);
 
+        temp2.release();
         return temp1;
     }
 
-    private Rect getRect(MatFile matFile, Mat morphOutput) {
+    private Rect getRect(File file, Mat morphOutput) {
         List<MatOfPoint> contours = new ArrayList<>();
         Mat hierarchy = new Mat();
 
         // find contours
         Imgproc.findContours(morphOutput, contours, hierarchy, Imgproc.RETR_CCOMP, Imgproc.CHAIN_APPROX_SIMPLE);
 
-        return findInContours(hierarchy, contours, matFile.file());
+        return findInContours(hierarchy, contours, file);
     }
 
     private Rect addPadding(Mat image, Rect rect, final int padding) {
@@ -276,6 +288,7 @@ public class ImagePreProcessor {
         sizePerFile.put(file.getAbsolutePath(), largestArea);
         MatOfPoint contour = contours.get(largestContourIdx);
         Rect rect = Imgproc.boundingRect(contour);
+        hierarchy.release();
         return squareRectangleAndCenter(rect);
     }
 
