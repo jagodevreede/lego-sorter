@@ -140,7 +140,7 @@ public class Learning {
         Block resNet50 = ResNetV1.builder()
                 .setImageShape(new Shape(channels, width, height))
                 .setNumLayers(50)
-                .setOutSize(10)
+                .setOutSize(100)
                 .build();
 
         model.setBlock(resNet50);
@@ -183,7 +183,7 @@ public class Learning {
                 .setRepositoryPath(Paths.get(folder))
                 .addTransform(new Resize(224, 224))
                 .addTransform(new ToTensor())
-                .setSampling(8, true)
+                .setSampling(32, true)
                 .build();
         dataset.prepare(new ProgressBar());
         return dataset;
