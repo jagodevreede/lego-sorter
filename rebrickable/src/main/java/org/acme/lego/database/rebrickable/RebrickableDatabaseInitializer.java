@@ -4,7 +4,7 @@ import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.acme.lego.database.rebrickable.model.*;
+import org.acme.lego.database.rebrickable.domain.*;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 
