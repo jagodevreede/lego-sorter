@@ -35,7 +35,6 @@ public class ImagePreProcessor {
     private void start() {
         File baseFolder = new File(BASE_FOLDER);
         getStreamOfObjectFolders(baseFolder)
-                .limit(100)
                 .peek(p -> new File(POVRAY_CROPPED + p.getName()).mkdirs())
                 .forEach(folder -> {
                     System.gc();
@@ -89,6 +88,7 @@ public class ImagePreProcessor {
         var output = preProcess(matFile);
         if (output == null) {
             System.err.println("Failed to process: " + matFile.file.getAbsolutePath());
+            sizePerFile.remove(matFile.file.getAbsolutePath());
         } else {
             System.out.println("Processed: " + matFile.file.getAbsolutePath());
         }
@@ -100,12 +100,23 @@ public class ImagePreProcessor {
 
         Mat hsvImage = getCleanedupHsvImage(image);
 
-        double[] bgColor = determineBackgroundColor(hsvImage);
+//        double[] bgColor = determineBackgroundColor(hsvImage);
+        double[] minBgColor = getMinColor(hsvImage);
+        double[] maxBgColor = getMaxColor(hsvImage);
         // remember: H ranges 0-180, S and V range 0-255
 
-        final int bgColorRange = 3;
-        Scalar minValues = new Scalar(Math.min(0, bgColor[0] - bgColorRange), Math.min(0, bgColor[1] - bgColorRange), Math.min(0, bgColor[2] - bgColorRange));
-        Scalar maxValues = new Scalar(Math.min(180, bgColor[0] + bgColorRange), Math.min(255, bgColor[1] + bgColorRange), Math.min(255, bgColor[2] + bgColorRange));
+        if (debug) {
+            System.out.println("min BG color: " + Arrays.toString(minBgColor));
+            System.out.println("max BG color: " + Arrays.toString(maxBgColor));
+            HighGui.imshow("hsvImage", hsvImage);
+            HighGui.waitKey(1000);
+        }
+
+        final int hColorRange = 30;
+        final int sColorRange = 60;
+        final int vColorRange = 60;
+        Scalar minValues = new Scalar(Math.min(0, minBgColor[0] - hColorRange), Math.min(0, minBgColor[1] - sColorRange), Math.min(0, minBgColor[2] - vColorRange));
+        Scalar maxValues = new Scalar(Math.min(180, maxBgColor[0] + hColorRange), Math.min(255, maxBgColor[1] + sColorRange), Math.min(255, maxBgColor[2] + vColorRange));
 
         Mat mask = new Mat();
         // threshold HSV
@@ -114,14 +125,25 @@ public class ImagePreProcessor {
         // invert mask
         Core.bitwise_not(mask, mask);
 
+        if (debug) {
+            HighGui.imshow("mask", mask);
+            HighGui.waitKey(1000);
+        }
+
         Mat morphOutput = getCleanedUpMat(mask);
 
         mask.release();
         hsvImage.release();
 
-        Rect rect = getRect(matFile.file, morphOutput);
+        Rect rect = getRect(matFile, morphOutput);
 
         if (rect != null) {
+            if (debug) {
+                System.out.println("rect " + new Point(rect.x, rect.y) + " " + new Point(rect.x + rect.width, rect.y + rect.height));
+                Imgproc.rectangle(image, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(250, 0, 0));
+                HighGui.imshow("rect", image);
+                HighGui.waitKey(1000);
+            }
             if (Math.min(rect.x, rect.y) == 0 || rect.x + rect.width == image.cols() || rect.y + rect.height == image.rows()) {
                 return null;
             }
@@ -157,6 +179,8 @@ public class ImagePreProcessor {
             croppedImage.release();
             resizedImage.release();
             return image;
+        } else if (debug) {
+            System.out.println("No rect found");
         }
 
         return null;
@@ -166,7 +190,7 @@ public class ImagePreProcessor {
         Mat hsvImage = new Mat();
         Mat blurredImage = new Mat();
         // remove some noise
-        Imgproc.blur(image, blurredImage, new Size(28, 28));
+        Imgproc.blur(image, blurredImage, new Size(12, 12));
 
         // convert the frame to HSV
         Imgproc.cvtColor(blurredImage, hsvImage, Imgproc.COLOR_BGR2HSV);
@@ -187,7 +211,7 @@ public class ImagePreProcessor {
         return temp1;
     }
 
-    private Rect getRect(File file, Mat morphOutput) {
+    private Rect getRect(MatFile file, Mat morphOutput) {
         List<MatOfPoint> contours = new ArrayList<>();
         Mat hierarchy = new Mat();
 
@@ -222,27 +246,57 @@ public class ImagePreProcessor {
         return rect;
     }
 
-    private double[] determineBackgroundColor(Mat blurredImage) {
+    private ConorColors getConorColors(Mat image) {
+        Mat blurredImage = new Mat();
+        // remove some more noise
+        Imgproc.blur(image, blurredImage, new Size(200, 200));
+
         byte[] topLeft = new byte[3];
-        blurredImage.get(1, 1, topLeft);
+        blurredImage.get(100, 100, topLeft);
 
         byte[] topRight = new byte[3];
-        blurredImage.get(1, blurredImage.cols() - 1, topRight);
+        blurredImage.get(100, blurredImage.cols() - 100, topRight);
 
         byte[] bottomRight = new byte[3];
-        blurredImage.get(blurredImage.rows() - 1, blurredImage.cols() - 1, bottomRight);
+        blurredImage.get(blurredImage.rows() - 100, blurredImage.cols() - 100, bottomRight);
 
         byte[] bottomLeft = new byte[3];
-        blurredImage.get(blurredImage.rows() - 1, 1, bottomLeft);
+        blurredImage.get(blurredImage.rows() - 250, 250, bottomLeft);
+
+        return new ConorColors(topLeft, topRight, bottomLeft, bottomRight);
+    }
+
+    private double[] getMinColor(Mat image) {
+        ConorColors conorColors = getConorColors(image);
 
         return new double[]{
-                removeOutliersAndGetAverage(topLeft[0], topLeft[0], bottomLeft[0], bottomRight[0]),
-                removeOutliersAndGetAverage(topLeft[1], topLeft[1], bottomLeft[1], bottomRight[1]),
-                removeOutliersAndGetAverage(topLeft[2], topLeft[2], bottomLeft[2], bottomRight[2])};
+                Stream.of(conorColors.topLeft[0], conorColors.topRight[0], conorColors.bottomLeft[0], conorColors.bottomRight[0]).mapToDouble(b -> (b & 0xFF)).min().getAsDouble(),
+                Stream.of(conorColors.topLeft[1], conorColors.topRight[1], conorColors.bottomLeft[1], conorColors.bottomRight[1]).mapToDouble(b -> (b & 0xFF)).min().getAsDouble(),
+                Stream.of(conorColors.topLeft[2], conorColors.topRight[2], conorColors.bottomLeft[2], conorColors.bottomRight[2]).mapToDouble(b -> (b & 0xFF)).min().getAsDouble()
+        };
+    }
+
+    private double[] getMaxColor(Mat image) {
+        ConorColors conorColors = getConorColors(image);
+
+        return new double[]{
+                Stream.of(conorColors.topLeft[0], conorColors.topRight[0], conorColors.bottomLeft[0], conorColors.bottomRight[0]).mapToDouble(b -> (b & 0xFF)).max().getAsDouble(),
+                Stream.of(conorColors.topLeft[1], conorColors.topRight[1], conorColors.bottomLeft[1], conorColors.bottomRight[1]).mapToDouble(b -> (b & 0xFF)).max().getAsDouble(),
+                Stream.of(conorColors.topLeft[2], conorColors.topRight[2], conorColors.bottomLeft[2], conorColors.bottomRight[2]).mapToDouble(b -> (b & 0xFF)).max().getAsDouble()
+        };
+    }
+
+    private double[] determineBackgroundColor(Mat image) {
+        ConorColors conorColors = getConorColors(image);
+
+        return new double[]{
+                removeOutliersAndGetAverage(conorColors.topLeft[0], conorColors.topRight[0], conorColors.bottomLeft[0], conorColors.bottomRight[0]),
+                removeOutliersAndGetAverage(conorColors.topLeft[1], conorColors.topRight[1], conorColors.bottomLeft[1], conorColors.bottomRight[1]),
+                removeOutliersAndGetAverage(conorColors.topLeft[2], conorColors.topRight[2], conorColors.bottomLeft[2], conorColors.bottomRight[2])};
     }
 
     public static double removeOutliersAndGetAverage(byte... bytes) {
-        final int threshold = 8;
+        int threshold = 8;
         // Calculate the average value of the byte array
         double avg = 0;
         for (byte b : bytes) {
@@ -251,6 +305,15 @@ public class ImagePreProcessor {
         }
         avg /= bytes.length;
 
+        double outcome = Double.NaN;
+        while (Double.isNaN(outcome)) {
+            outcome = getAvgWithoutOutlires(threshold, avg, bytes);
+            threshold += 5;
+        }
+        return outcome;
+    }
+
+    private static double getAvgWithoutOutlires(int threshold, double avg, byte[] bytes) {
         // Remove values that are not close to the average
         List<Short> list = new ArrayList<>();
         for (byte b : bytes) {
@@ -270,8 +333,10 @@ public class ImagePreProcessor {
         return newAvg;
     }
 
-    private Rect findInContours(Mat hierarchy, List<MatOfPoint> contours, File file) {
-        //drawContours(hierarchy, contours);
+    private Rect findInContours(Mat hierarchy, List<MatOfPoint> contours, MatFile file) {
+        if (debug) {
+            drawContours(hierarchy, contours, file.mat);
+        }
         if (contours.isEmpty()) {
             return null;
         }
@@ -285,7 +350,7 @@ public class ImagePreProcessor {
                 largestContourIdx = idx;
             }
         }
-        sizePerFile.put(file.getAbsolutePath(), largestArea);
+        sizePerFile.put(file.file.getAbsolutePath(), largestArea);
         MatOfPoint contour = contours.get(largestContourIdx);
         Rect rect = Imgproc.boundingRect(contour);
         hierarchy.release();
@@ -320,6 +385,9 @@ public class ImagePreProcessor {
     }
 
     private record FileAndSize(File file, double size) {
+    }
+
+    private record ConorColors(byte[] topLeft, byte[] topRight, byte[] bottomLeft, byte[] bottomRight) {
     }
 
 }
