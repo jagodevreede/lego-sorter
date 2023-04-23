@@ -68,7 +68,7 @@ public class ImagePreProcessor {
 
     private Stream<File> getStreamOfImagesInFolder(File folder) {
         return Stream.of(Objects.requireNonNull(folder.listFiles()))
-                .filter(f -> f.isFile() && f.getName().endsWith(".png"));
+                .filter(f -> f.isFile() && (f.getName().endsWith(".png") || f.getName().endsWith(".jpg")));
     }
 
     private Stream<File> getStreamOfObjectFolders(File baseFolder) {

@@ -69,6 +69,7 @@ hs_err_pid*
 *.bak
 *.pov
 *.png
+*.jpg
 .idea/
 old/
 node_modules/

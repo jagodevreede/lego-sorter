@@ -11,4 +11,15 @@
 
     <artifactId>ml-common</artifactId>
 
+    <dependencies>
+        <dependency>
+            <groupId>ai.djl</groupId>
+            <artifactId>basicdataset</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ai.djl</groupId>
+            <artifactId>model-zoo</artifactId>
+        </dependency>
+    </dependencies>
+
 </project>

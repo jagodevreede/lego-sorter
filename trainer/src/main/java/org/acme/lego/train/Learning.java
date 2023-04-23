@@ -4,7 +4,6 @@ import ai.djl.Application;
 import ai.djl.MalformedModelException;
 import ai.djl.Model;
 import ai.djl.basicdataset.cv.classification.ImageFolder;
-import ai.djl.basicmodelzoo.cv.classification.ResNetV1;
 import ai.djl.metric.Metric;
 import ai.djl.metric.Metrics;
 import ai.djl.modality.Classifications;
@@ -12,7 +11,6 @@ import ai.djl.modality.cv.Image;
 import ai.djl.modality.cv.transform.Resize;
 import ai.djl.modality.cv.transform.ToTensor;
 import ai.djl.ndarray.types.Shape;
-import ai.djl.nn.Block;
 import ai.djl.nn.Blocks;
 import ai.djl.nn.SequentialBlock;
 import ai.djl.nn.SymbolBlock;
@@ -134,18 +132,7 @@ public class Learning {
                 .addTrainingListeners(TrainingListener.Defaults.logging(1));
     }
 
-    private static Model getModel() {
-        Model model = Model.newInstance("lego");
 
-        Block resNet50 = ResNetV1.builder()
-                .setImageShape(new Shape(channels, width, height))
-                .setNumLayers(50)
-                .setOutSize(100)
-                .build();
-
-        model.setBlock(resNet50);
-        return model;
-    }
 
     private static Model getTransferLearningModel() throws ModelNotFoundException, MalformedModelException, IOException {
         Criteria.Builder<Image, Classifications> builder = getModelBuilder();
