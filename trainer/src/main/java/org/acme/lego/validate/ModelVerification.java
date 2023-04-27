@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -30,13 +31,32 @@ class ModelVerification {
 
     private static Path modelDir = Paths.get("model");
 
+    private static Path multipleModelsDir = Paths.get("models");
+
     private final Map<String, Map<String, Integer>> matrix = new HashMap<>();
 
     public static void main(String[] args) throws Exception {
-        try (Model model = getModel()) {
-            model.load(modelDir, MODEL_NAME);
+        File targetSynset = new File(modelDir.toFile(), "synset.txt");
+        for (File file : multipleModelsDir.toFile().listFiles((dir, name) -> name.endsWith(".params"))) {
+            logger.info("Testing model {}", file.getName());
+            // copy file to moodel dir
+            File targetFile = new File(modelDir.toFile(), "lego-0000.params");
 
-            new ModelVerification(model);
+            targetFile.delete();
+            targetSynset.delete();
+            Path fileToCopy = Paths.get(file.getAbsolutePath());
+            try {
+                Files.copy(fileToCopy, targetFile.toPath());
+                Files.copy(new File(multipleModelsDir.toFile(), "synset.txt").toPath(), targetSynset.toPath());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
+            try (Model model = getModel()) {
+                model.load(modelDir, MODEL_NAME);
+
+                new ModelVerification(model);
+            }
         }
     }
 
@@ -67,12 +87,15 @@ class ModelVerification {
         try {
             Path imageFile = file.toPath();
             Image img = ImageFactory.getInstance().fromFile(imageFile);
+            final long startTime = System.currentTimeMillis();
             // holds the probability score per label
             Classifications predictResult = predictor.predict(img);
             if (predictResult.items().isEmpty()) {
                 logger.error("No prediction for " + imageFile.toString());
                 return;
             }
+            final long endTime = System.currentTimeMillis();
+            logger.debug("Took total {}ms", endTime - startTime);
             List<Classifications.Classification> classificationList = predictResult.topK(1);
             Classifications.Classification classification = classificationList.get(0);
             String className = classification.getClassName();
@@ -81,7 +104,7 @@ class ModelVerification {
             outcome.put(className, count + 1);
             matrix.put(folder.getName(), outcome);
             if (!folder.getName().equals(className)) {
-                logger.info("{} should be {} but was {} with probability {}", file, folder.getName(), className, classification.getProbability());
+                logger.debug("{} should be {} but was {} with probability {}", file, folder.getName(), className, classification.getProbability());
             }
         } catch (TranslateException | IOException e) {
             logger.error(e.getMessage(), e);
@@ -93,7 +116,7 @@ class ModelVerification {
         allKeys.addAll(matrix.values().stream().flatMap(m -> m.keySet().stream()).toList());
 
         // Find the length of the longest key in the outer map and the inner maps
-        int maxKeyLength = allKeys.stream().mapToInt(String::length).max().orElse(0) +1;
+        int maxKeyLength = allKeys.stream().mapToInt(String::length).max().orElse(0) + 1;
 
         // Calculate the diagonal sum and the total sum
         int diagonalSum = 0;

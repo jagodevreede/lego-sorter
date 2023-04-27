@@ -19,7 +19,7 @@ public class AiModelHelper {
         Block resNet50 = ResNetV1.builder()
                 .setImageShape(new Shape(channels, width, height))
                 .setNumLayers(50)
-                .setOutSize(100)
+                .setOutSize(5)
                 .build();
 
         model.setBlock(resNet50);
