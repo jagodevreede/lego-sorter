@@ -35,6 +35,10 @@ class ModelVerification {
 
     private final Map<String, Map<String, Integer>> matrix = new HashMap<>();
 
+    private final static Map<String, Double> totalScore = new HashMap<>();
+
+    private double accuracy;
+
     public static void main(String[] args) throws Exception {
         File targetSynset = new File(modelDir.toFile(), "synset.txt");
         for (File file : multipleModelsDir.toFile().listFiles((dir, name) -> name.endsWith(".params"))) {
@@ -55,9 +59,12 @@ class ModelVerification {
             try (Model model = getModel()) {
                 model.load(modelDir, MODEL_NAME);
 
-                new ModelVerification(model);
+                totalScore.put(file.getName(), new ModelVerification(model).accuracy);
             }
         }
+        totalScore.keySet().stream().sorted().forEach(key -> {
+            logger.info("Model {} accuracy {}", key, totalScore.get(key));
+        });
     }
 
     private static Translator<Image, Classifications> createTranslator() {
@@ -83,6 +90,10 @@ class ModelVerification {
         printConfusionMatrix();
     }
 
+    public double getAccuracy() {
+        return accuracy;
+    }
+
     private void predictFile(Predictor<Image, Classifications> predictor, File folder, File file) {
         try {
             Path imageFile = file.toPath();
@@ -99,10 +110,19 @@ class ModelVerification {
             List<Classifications.Classification> classificationList = predictResult.topK(1);
             Classifications.Classification classification = classificationList.get(0);
             String className = classification.getClassName();
-            var outcome = matrix.getOrDefault(folder.getName(), new HashMap<>());
-            var count = outcome.getOrDefault(className, 0);
-            outcome.put(className, count + 1);
-            matrix.put(folder.getName(), outcome);
+            if (classification.getProbability() > 0.8) {
+                var outcome = matrix.getOrDefault(folder.getName(), new HashMap<>());
+                var count = outcome.getOrDefault(className, 0);
+                outcome.put(className, count + 1);
+                matrix.put(folder.getName(), outcome);
+            } else {
+                var outcome = matrix.getOrDefault(folder.getName(), new HashMap<>());
+                var count = outcome.getOrDefault("unsure", 0);
+                outcome.put("unsure", count + 1);
+                matrix.put(folder.getName(), outcome);
+            }
+
+
             if (!folder.getName().equals(className)) {
                 logger.debug("{} should be {} but was {} with probability {}", file, folder.getName(), className, classification.getProbability());
             }
@@ -157,7 +177,7 @@ class ModelVerification {
             System.out.printf("%-13.2f%n", accuracy * 100);
         }
 
-        double accuracy = (double) diagonalSum / totalSum;
+        accuracy = (double) diagonalSum / totalSum;
         System.out.printf("Total accuracy: %-13.2f%n", accuracy * 100);
     }
 }

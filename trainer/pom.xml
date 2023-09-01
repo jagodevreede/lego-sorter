@@ -69,6 +69,17 @@
                 </dependency>
             </dependencies>
         </profile>
+        <profile>
+            <id>osx</id>
+            <dependencies>
+                <dependency>
+                    <groupId>ai.djl.mxnet</groupId>
+                    <artifactId>mxnet-native-mkl</artifactId>
+                    <classifier>osx-x86_64</classifier>
+                    <scope>runtime</scope>
+                </dependency>
+            </dependencies>
+        </profile>
     </profiles>
 
     <build>

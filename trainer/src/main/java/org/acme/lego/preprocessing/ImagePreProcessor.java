@@ -17,10 +17,16 @@ public class ImagePreProcessor {
     }
     public static final int FILES_TO_KEEP = 1500;
     public static final String BASE_FOLDER = "povray/";
+//    public static final String BASE_FOLDER = "samples_mobile/";
 
     public static final String POVRAY_CROPPED = BASE_FOLDER + "cropped/";
 
     private final boolean debug = false;
+    private final boolean blur = false;
+
+    private final AtomicInteger failures = new AtomicInteger(0);
+
+    private final static Random random = new Random();
 
     private final Mat dilateElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(20, 20));
     private final Mat erodeElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(1, 1));
@@ -29,7 +35,9 @@ public class ImagePreProcessor {
     private final Map<String, Double> sizePerFile = new ConcurrentHashMap<>();
 
     public static void main(String[] args) {
+        long startTime = System.currentTimeMillis();
         new ImagePreProcessor().start();
+        System.out.println("Total processing time took: " + (System.currentTimeMillis() - startTime) + "ms");
     }
 
     private void start() {
@@ -41,6 +49,7 @@ public class ImagePreProcessor {
                     sizePerFile.clear();
                     List<FileAndSize> fileAndSizes = new ArrayList<>(getStreamOfImagesInFolder(folder)
                             .parallel()
+//                            .limit(1)
                             .peek(this::testProcess)
                             .filter(file -> sizePerFile.get(file.getAbsolutePath()) != null)
                             .map(file -> {
@@ -64,6 +73,7 @@ public class ImagePreProcessor {
 
 
         counterPerObject.forEach((key, value) -> System.out.println(key + ": " + value.get()));
+        System.out.println("Failures: " + failures.get());
     }
 
     private Stream<File> getStreamOfImagesInFolder(File folder) {
@@ -85,17 +95,18 @@ public class ImagePreProcessor {
     }
 
     private void testProcess(MatFile matFile) {
-        var output = preProcess(matFile);
+        var output = process(matFile);
         if (output == null) {
             System.err.println("Failed to process: " + matFile.file.getAbsolutePath());
             sizePerFile.remove(matFile.file.getAbsolutePath());
+            failures.incrementAndGet();
         } else {
             System.out.println("Processed: " + matFile.file.getAbsolutePath());
         }
         matFile.mat.release();
     }
 
-    public Mat preProcess(MatFile matFile) {
+    public Mat process(MatFile matFile) {
         Mat image = matFile.mat();
 
         Mat hsvImage = getCleanedupHsvImage(image);
@@ -112,9 +123,9 @@ public class ImagePreProcessor {
             HighGui.waitKey(1000);
         }
 
-        final int hColorRange = 30;
-        final int sColorRange = 60;
-        final int vColorRange = 60;
+        final int hColorRange = 90;
+        final int sColorRange = 30;
+        final int vColorRange = 30;
         Scalar minValues = new Scalar(Math.min(0, minBgColor[0] - hColorRange), Math.min(0, minBgColor[1] - sColorRange), Math.min(0, minBgColor[2] - vColorRange));
         Scalar maxValues = new Scalar(Math.min(180, maxBgColor[0] + hColorRange), Math.min(255, maxBgColor[1] + sColorRange), Math.min(255, maxBgColor[2] + vColorRange));
 
@@ -174,10 +185,26 @@ public class ImagePreProcessor {
             AtomicInteger counter = counterPerObject.computeIfAbsent(matFile.file.getParentFile().getName(), k -> new AtomicInteger());
             counter.getAndIncrement();
 
+            int blurSize = random.nextInt(3);
+            Mat blurredImage;
+            if (blurSize > 1 && blur) {
+                blurredImage = new Mat();
+                Imgproc.blur(resizedImage, blurredImage, new Size(blurSize, blurSize));
+            } else {
+                blurredImage = resizedImage;
+            }
+
+            // lower contrast:
+            Mat temp3 = new Mat(blurredImage.rows(), blurredImage.cols(), blurredImage.type());
+            blurredImage.convertTo(temp3, -1, 1.5, -75);
+            blurredImage.release();
+
             // write cropped image to file
-            Imgcodecs.imwrite(POVRAY_CROPPED + matFile.file.getParentFile().getName() + "/" + matFile.file.getName(), resizedImage);
+            Imgcodecs.imwrite(POVRAY_CROPPED + matFile.file.getParentFile().getName() + "/" + matFile.file.getName(), temp3);
             croppedImage.release();
             resizedImage.release();
+            blurredImage.release();
+            temp3.release();
             return image;
         } else if (debug) {
             System.out.println("No rect found");
@@ -247,21 +274,22 @@ public class ImagePreProcessor {
     }
 
     private ConorColors getConorColors(Mat image) {
+        final int position = 250;
         Mat blurredImage = new Mat();
         // remove some more noise
         Imgproc.blur(image, blurredImage, new Size(200, 200));
 
         byte[] topLeft = new byte[3];
-        blurredImage.get(100, 100, topLeft);
+        blurredImage.get(position, position, topLeft);
 
         byte[] topRight = new byte[3];
-        blurredImage.get(100, blurredImage.cols() - 100, topRight);
+        blurredImage.get(position, blurredImage.cols() - position, topRight);
 
         byte[] bottomRight = new byte[3];
-        blurredImage.get(blurredImage.rows() - 100, blurredImage.cols() - 100, bottomRight);
+        blurredImage.get(blurredImage.rows() - position, blurredImage.cols() - position, bottomRight);
 
         byte[] bottomLeft = new byte[3];
-        blurredImage.get(blurredImage.rows() - 250, 250, bottomLeft);
+        blurredImage.get(blurredImage.rows() - position, position, bottomLeft);
 
         return new ConorColors(topLeft, topRight, bottomLeft, bottomRight);
     }

@@ -74,5 +74,7 @@ hs_err_pid*
 old/
 node_modules/
 model/
+vgg16_models/
+samples_mobile/
 .angular
 dependency-reduced-pom.xml

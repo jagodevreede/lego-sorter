@@ -62,21 +62,7 @@ public class Learning {
 
             final long startTime = System.currentTimeMillis();
 
-            AtomicReference<Double> bestValidationLoss = new AtomicReference<>(99999.9);
-            EarlyStoppingFit earlyStoppingFit =
-                    new EarlyStoppingFit(25, 0.02, 3,
-                            9 * 60, 1, 5);
-            earlyStoppingFit.addCallback((m, epoch, validationLoss) -> {
-                epochs.incrementAndGet();
-                try {
-                    if (validationLoss < bestValidationLoss.get()) {
-                        model.save(modelDir, "lego-e-" + epoch + "-v-" + validationLoss);
-                        bestValidationLoss.set(validationLoss);
-                    }
-                } catch (final IOException ioe) {
-                    ioe.printStackTrace();
-                }
-            });
+            EarlyStoppingFit earlyStoppingFit = getEarlyStoppingFit(model, modelDir);
             earlyStoppingFit.fit(trainer, datasets[0], datasets[1]);
 
             log.info("Model build complete in " + (System.currentTimeMillis() - startTime) / 1000 + "sec");
@@ -94,6 +80,28 @@ public class Learning {
 
             printStatisticsPerEpoch(trainer);
         }
+    }
+
+    private static EarlyStoppingFit getEarlyStoppingFit(Model model, Path modelDir) {
+        AtomicReference<Double> bestValidationLoss = new AtomicReference<>(99999.9);
+        EarlyStoppingFit earlyStoppingFit =
+                new EarlyStoppingFit(150, 0.02, 10,
+                        9 * 60, 1, 5);
+        earlyStoppingFit.addCallback((m, epoch, validationLoss) -> {
+            epochs.incrementAndGet();
+            try {
+                String filename = "lego-e-" + epoch + "-v-" + validationLoss;
+                if (validationLoss < bestValidationLoss.get()) {
+                    model.save(modelDir, filename + "-best");
+                    bestValidationLoss.set(validationLoss);
+                } else {
+                    model.save(modelDir, filename);
+                }
+            } catch (final IOException ioe) {
+                ioe.printStackTrace();
+            }
+        });
+        return earlyStoppingFit;
     }
 
     private static void printStatisticsPerEpoch(Trainer trainer) {
@@ -131,8 +139,6 @@ public class Learning {
                 .addEvaluator(new Accuracy())
                 .addTrainingListeners(TrainingListener.Defaults.logging(1));
     }
-
-
 
     private static Model getTransferLearningModel() throws ModelNotFoundException, MalformedModelException, IOException {
         Criteria.Builder<Image, Classifications> builder = getModelBuilder();

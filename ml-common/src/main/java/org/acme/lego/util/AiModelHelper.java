@@ -4,7 +4,9 @@ import ai.djl.Model;
 import ai.djl.basicmodelzoo.cv.classification.ResNetV1;
 import ai.djl.ndarray.types.Shape;
 import ai.djl.nn.Block;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class AiModelHelper {
 
     public static final String MODEL_NAME = "lego";
