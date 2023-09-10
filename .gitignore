@@ -46,6 +46,7 @@ nb-configuration.xml
 
 # Log file
 *.log
+*.log.*
 
 # BlueJ files
 *.ctxt
@@ -59,13 +60,16 @@ nb-configuration.xml
 *.nar
 *.ear
 *.zip
+*.zip.*
 *.tar.gz
+*.tar.gz.*
 *.tar.bz2
 *.rar
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 
+*.params
 *.bak
 *.pov
 *.png
