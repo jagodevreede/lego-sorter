@@ -23,6 +23,7 @@ public class ImagePreProcessor {
 
     private final boolean debug = false;
     private final boolean blur = false;
+    private final boolean gray = false;
 
     private final AtomicInteger failures = new AtomicInteger(0);
 
@@ -199,12 +200,20 @@ public class ImagePreProcessor {
             blurredImage.convertTo(temp3, -1, 1.5, -75);
             blurredImage.release();
 
+            Mat grayImage = new Mat();
+            if (gray) {
+                Imgproc.cvtColor(temp3, grayImage, Imgproc.COLOR_RGB2GRAY);
+                temp3.release();
+            } else {
+                grayImage = temp3;
+            }
+
             // write cropped image to file
             Imgcodecs.imwrite(POVRAY_CROPPED + matFile.file.getParentFile().getName() + "/" + matFile.file.getName(), temp3);
             croppedImage.release();
             resizedImage.release();
             blurredImage.release();
-            temp3.release();
+            grayImage.release();
             return image;
         } else if (debug) {
             System.out.println("No rect found");
@@ -389,7 +398,7 @@ public class ImagePreProcessor {
         if (hierarchy.size().height > 0 && hierarchy.size().width > 0) {
             // for each contour, display it in blue
             for (int idx = 0; idx >= 0; idx = (int) hierarchy.get(0, idx)[0]) {
-                Imgproc.drawContours(frame, contours, idx, new Scalar(250, 0, 0));
+                Imgproc.drawContours(frame, contours, idx, new Scalar(250, 0, 0), 10);
             }
         }
     }

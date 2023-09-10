@@ -6,16 +6,19 @@ import ai.djl.training.Trainer;
 import ai.djl.training.dataset.Batch;
 import ai.djl.training.dataset.RandomAccessDataset;
 import ai.djl.translate.TranslateException;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * got from: https://github.com/deepjavalibrary/djl/issues/38
  */
+@Slf4j
 public class EarlyStoppingFit {
     private static final Logger logger = LoggerFactory.getLogger(EarlyStoppingFit.class);
     /**
@@ -62,14 +65,18 @@ public class EarlyStoppingFit {
         double prevLoss = Double.NaN;
         int improvementFailures = 0;
         for (int epoch = 0; epoch < maxEpochs; epoch++) {
+            final long startTime = System.currentTimeMillis();
             for (Batch batch : trainer.iterateDataset(trainingSet)) {
                 EasyTrain.trainBatch(trainer, batch);
                 trainer.step();
                 batch.close();
             }
+            log.info("Training epoch {} took {}s", epoch, TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - startTime));
 
+            final long startTimeOfEvaluate = System.currentTimeMillis();
             // After each epoch, test against the validation dataset if we have one
             EasyTrain.evaluateDataset(trainer, validateSet);
+            log.info("Evaluate epoch {} took {}s", epoch, TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - startTimeOfEvaluate));
 
             // reset training and validation evaluators at end of epoch
             trainer.notifyListeners(listener -> listener.onEpoch(trainer));

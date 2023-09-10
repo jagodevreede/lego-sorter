@@ -4,6 +4,7 @@ import ai.djl.Application;
 import ai.djl.MalformedModelException;
 import ai.djl.Model;
 import ai.djl.basicdataset.cv.classification.ImageFolder;
+import ai.djl.engine.Engine;
 import ai.djl.metric.Metric;
 import ai.djl.metric.Metrics;
 import ai.djl.modality.Classifications;
@@ -53,6 +54,8 @@ public class Learning {
         ImageFolder dataset = loadDataset(POVRAY_CROPPED);
         RandomAccessDataset[] datasets = dataset.randomSplit(80, 20);
 
+        Engine.getInstance().setRandomSeed(42);
+
         try (Model model = getModel();
              Trainer trainer = model.newTrainer(getTrainingConfig())) {
             Path modelDir = Paths.get("model");
@@ -85,7 +88,7 @@ public class Learning {
     private static EarlyStoppingFit getEarlyStoppingFit(Model model, Path modelDir) {
         AtomicReference<Double> bestValidationLoss = new AtomicReference<>(99999.9);
         EarlyStoppingFit earlyStoppingFit =
-                new EarlyStoppingFit(150, 0.02, 10,
+                new EarlyStoppingFit(10, 0.02, 10,
                         9 * 60, 1, 5);
         earlyStoppingFit.addCallback((m, epoch, validationLoss) -> {
             epochs.incrementAndGet();
@@ -124,6 +127,8 @@ public class Learning {
         for (int i = 0; i < trainAccuracy.length; i++) {
             log.info(i + 1 + "," + trainLoss[i] + "," + testLoss[i] + "," + trainAccuracy[i] + "," + testAccuracy[i]);
         }
+        // Force exit, something keeps running in the background, TODO figure out why app is not exiting.
+        System.exit(0);
     }
 
     private static void saveLabels(Path modelDir, List<String> synset) throws IOException {
@@ -170,13 +175,17 @@ public class Learning {
         return builder;
     }
 
-
     private static ImageFolder loadDataset(String folder) throws IOException {
         ImageFolder dataset = ImageFolder.builder()
                 .setRepositoryPath(Paths.get(folder))
+//                .addTransform(new TestTransform())
                 .addTransform(new Resize(224, 224))
+               // .addTransform(new RandomColorJitter(0.4f, 0.4f, 0.4f, 0.4f)) // not supported on GPU
+//                .addTransform(new RandomFlipLeftRight())
+//                .addTransform(new RandomFlipTopBottom())
                 .addTransform(new ToTensor())
                 .setSampling(32, true)
+                .optFlag(Image.Flag.GRAYSCALE)
                 .build();
         dataset.prepare(new ProgressBar());
         return dataset;

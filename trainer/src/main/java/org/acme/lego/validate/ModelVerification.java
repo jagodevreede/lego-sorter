@@ -5,7 +5,6 @@ import ai.djl.inference.Predictor;
 import ai.djl.modality.Classifications;
 import ai.djl.modality.cv.Image;
 import ai.djl.modality.cv.ImageFactory;
-import ai.djl.modality.cv.transform.Resize;
 import ai.djl.modality.cv.transform.ToTensor;
 import ai.djl.modality.cv.translator.ImageClassificationTranslator;
 import ai.djl.translate.TranslateException;
@@ -21,7 +20,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static org.acme.lego.util.AiModelHelper.*;
+import static org.acme.lego.util.AiModelHelper.MODEL_NAME;
+import static org.acme.lego.util.AiModelHelper.getModel;
 
 
 class ModelVerification {
@@ -58,8 +58,9 @@ class ModelVerification {
 
             try (Model model = getModel()) {
                 model.load(modelDir, MODEL_NAME);
-
+                long startTime = System.currentTimeMillis();
                 totalScore.put(file.getName(), new ModelVerification(model).accuracy);
+                logger.info("Validation done in {}ms", System.currentTimeMillis() - startTime);
             }
         }
         totalScore.keySet().stream().sorted().forEach(key -> {
@@ -69,8 +70,10 @@ class ModelVerification {
 
     private static Translator<Image, Classifications> createTranslator() {
         return ImageClassificationTranslator.builder()
-                .addTransform(new Resize(width, height))
+//                .addTransform(new Resize(width, height))
+//                .addTransform(new TestTransform())
                 .addTransform(new ToTensor())
+                .optFlag(Image.Flag.GRAYSCALE)
                 .optApplySoftmax(true)
                 .build();
     }
@@ -117,8 +120,8 @@ class ModelVerification {
                 matrix.put(folder.getName(), outcome);
             } else {
                 var outcome = matrix.getOrDefault(folder.getName(), new HashMap<>());
-                var count = outcome.getOrDefault("unsure", 0);
-                outcome.put("unsure", count + 1);
+                var count = outcome.getOrDefault("unsure " + className, 0);
+                outcome.put("unsure " + className, count + 1);
                 matrix.put(folder.getName(), outcome);
             }
 
