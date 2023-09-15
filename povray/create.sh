@@ -12,8 +12,8 @@ DISABLE_AUTO_TITLE="true"
 LGEO_FOLDER=/Users/jagodevreede/Downloads/ldraw/LGEO
 PARTS_FOLDER=/Users/jagodevreede/Downloads/ldraw/parts/
 LDVIEW_FOLDER=/Applications/LDView.app/Contents/MacOS
-RENDER_SIZE_H=1024
-RENDER_SIZE_W=768
+RENDER_SIZE_H=4096
+RENDER_SIZE_W=3072
 #set -ex
 
 rm -rf povray_$1.log
