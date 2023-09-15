@@ -1,4 +1,5 @@
 #!/bin/bash
 set -e
 
-cat commands.txt | xargs -I CMD -P 12 bash -c CMD
+cat commands.txt | xargs -I CMD -P 16 bash -c CMD
+echo "Done"
