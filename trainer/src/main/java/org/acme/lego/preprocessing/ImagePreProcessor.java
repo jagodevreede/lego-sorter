@@ -16,14 +16,14 @@ public class ImagePreProcessor {
         nu.pattern.OpenCV.loadLocally();
     }
     public static final int FILES_TO_KEEP = 1500;
-    public static final String BASE_FOLDER = "povray/";
-//    public static final String BASE_FOLDER = "samples_mobile/";
+//    public static final String BASE_FOLDER = "../povray/";
+    public static final String BASE_FOLDER = "samples/cam";
 
     public static final String POVRAY_CROPPED = BASE_FOLDER + "cropped/";
 
     private final boolean debug = false;
     private final boolean blur = false;
-    private final boolean gray = false;
+    private final boolean gray = true;
 
     private final AtomicInteger failures = new AtomicInteger(0);
 
@@ -209,7 +209,7 @@ public class ImagePreProcessor {
             }
 
             // write cropped image to file
-            Imgcodecs.imwrite(POVRAY_CROPPED + matFile.file.getParentFile().getName() + "/" + matFile.file.getName(), temp3);
+            Imgcodecs.imwrite(POVRAY_CROPPED + matFile.file.getParentFile().getName() + "/" + matFile.file.getName(), grayImage);
             croppedImage.release();
             resizedImage.release();
             blurredImage.release();
