@@ -9,6 +9,8 @@ import ai.djl.metric.Metric;
 import ai.djl.metric.Metrics;
 import ai.djl.modality.Classifications;
 import ai.djl.modality.cv.Image;
+import ai.djl.modality.cv.transform.RandomFlipLeftRight;
+import ai.djl.modality.cv.transform.RandomFlipTopBottom;
 import ai.djl.modality.cv.transform.Resize;
 import ai.djl.modality.cv.transform.ToTensor;
 import ai.djl.ndarray.types.Shape;
@@ -181,8 +183,8 @@ public class Learning {
 //                .addTransform(new TestTransform())
                 .addTransform(new Resize(224, 224))
                // .addTransform(new RandomColorJitter(0.4f, 0.4f, 0.4f, 0.4f)) // not supported on GPU
-//                .addTransform(new RandomFlipLeftRight())
-//                .addTransform(new RandomFlipTopBottom())
+                .addTransform(new RandomFlipLeftRight())
+                .addTransform(new RandomFlipTopBottom())
                 .addTransform(new ToTensor())
                 .setSampling(32, true)
                 .optFlag(Image.Flag.GRAYSCALE)

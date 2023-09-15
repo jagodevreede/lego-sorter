@@ -24,7 +24,7 @@ import static org.acme.lego.util.AiModelHelper.MODEL_NAME;
 import static org.acme.lego.util.AiModelHelper.getModel;
 
 
-class ModelVerification {
+public class ModelVerification {
     private static final Logger logger = LoggerFactory.getLogger(ModelVerification.class);
 
     private static final String VALIDATION_SET = "samples_mobile/cropped";
@@ -109,10 +109,11 @@ class ModelVerification {
                 return;
             }
             final long endTime = System.currentTimeMillis();
-            logger.debug("Took total {}ms", endTime - startTime);
+
             List<Classifications.Classification> classificationList = predictResult.topK(1);
             Classifications.Classification classification = classificationList.get(0);
             String className = classification.getClassName();
+            String classNameToLog = classification.getClassName();
             if (classification.getProbability() > 0.8) {
                 var outcome = matrix.getOrDefault(folder.getName(), new HashMap<>());
                 var count = outcome.getOrDefault(className, 0);
@@ -123,11 +124,13 @@ class ModelVerification {
                 var count = outcome.getOrDefault("unsure " + className, 0);
                 outcome.put("unsure " + className, count + 1);
                 matrix.put(folder.getName(), outcome);
+                classNameToLog = "unsure " + className + "?";
             }
 
-
             if (!folder.getName().equals(className)) {
-                logger.debug("{} should be {} but was {} with probability {}", file, folder.getName(), className, classification.getProbability());
+                logger.debug("(Incorrect) Prediction took total {}ms {} with probability {}", endTime - startTime, classNameToLog, classification.getProbability());
+            } else {
+                logger.debug(" (correct)  Prediction took total {}ms {} with probability {}", endTime - startTime, classNameToLog, classification.getProbability());
             }
         } catch (TranslateException | IOException e) {
             logger.error(e.getMessage(), e);

@@ -6,9 +6,9 @@ if [ "$#" -ne 1 ]; then
   exit
 fi
 
-ssh $USERNAME@$1 'cd lego; tar -zcvf model.tar.gz model/;'
-ssh $USERNAME@$1 'cd lego; python -m SimpleHTTPServer 8000;' &
+ssh $USERNAME@$1 'cd lego; tar -zcvf model.tar.gz app/model/;'
+ssh $USERNAME@$1 'cd lego; python3 -m http.server 8000;' &
 sleep 3
 wget http://$1:8000/model.tar.gz
 wget http://$1:8000/learning.log
-ssh $USERNAME@$1 'killall -9 python'
+ssh $USERNAME@$1 'killall -9 python3'

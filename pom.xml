@@ -17,12 +17,13 @@
         <java.version>17</java.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <djl.version>0.21.0</djl.version>
+        <djl.version>0.23.0</djl.version>
+        <pytorch.version>2.0.1</pytorch.version>
         <logback.version>1.2.9</logback.version>
         <maven.compiler.parameters>true</maven.compiler.parameters>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <quarkus.platform.version>2.13.2.Final</quarkus.platform.version>
+        <quarkus.platform.version>3.3.2</quarkus.platform.version>
         <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
 
         <maven-shade-plugin.version>3.4.1</maven-shade-plugin.version>
