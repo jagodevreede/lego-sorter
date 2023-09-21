@@ -24,6 +24,7 @@ public class ImagePreProcessor {
     private final boolean debug = false;
     private final boolean blur = false;
     private final boolean gray = true;
+    private final boolean lowerContrast = true;
 
     private final AtomicInteger failures = new AtomicInteger(0);
 
@@ -196,17 +197,7 @@ public class ImagePreProcessor {
             }
 
             // lower contrast:
-            Mat temp3 = new Mat(blurredImage.rows(), blurredImage.cols(), blurredImage.type());
-            blurredImage.convertTo(temp3, -1, 1.5, -75);
-            blurredImage.release();
-
-            Mat grayImage = new Mat();
-            if (gray) {
-                Imgproc.cvtColor(temp3, grayImage, Imgproc.COLOR_RGB2GRAY);
-                temp3.release();
-            } else {
-                grayImage = temp3;
-            }
+            Mat grayImage = lowerContrast(blurredImage);
 
             // write cropped image to file
             Imgcodecs.imwrite(POVRAY_CROPPED + matFile.file.getParentFile().getName() + "/" + matFile.file.getName(), grayImage);
@@ -220,6 +211,25 @@ public class ImagePreProcessor {
         }
 
         return null;
+    }
+
+    private Mat lowerContrast(Mat blurredImage) {
+        Mat temp3 = blurredImage;
+        if (lowerContrast) {
+            temp3 = new Mat(blurredImage.rows(), blurredImage.cols(), blurredImage.type());
+            blurredImage.convertTo(temp3, -1, 1.5, -75);
+            blurredImage.release();
+        }
+
+        final Mat grayImage;
+        if (gray) {
+            grayImage = new Mat();
+            Imgproc.cvtColor(temp3, grayImage, Imgproc.COLOR_RGB2GRAY);
+            temp3.release();
+        } else {
+            grayImage = temp3;
+        }
+        return grayImage;
     }
 
     private Mat getCleanedupHsvImage(Mat image) {

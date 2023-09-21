@@ -11,7 +11,6 @@ import ai.djl.modality.Classifications;
 import ai.djl.modality.cv.Image;
 import ai.djl.modality.cv.transform.RandomFlipLeftRight;
 import ai.djl.modality.cv.transform.RandomFlipTopBottom;
-import ai.djl.modality.cv.transform.Resize;
 import ai.djl.modality.cv.transform.ToTensor;
 import ai.djl.ndarray.types.Shape;
 import ai.djl.nn.Blocks;
@@ -52,11 +51,14 @@ public class Learning {
     private static final AtomicInteger epochs = new AtomicInteger(0);
 
     public static void main(String[] args) throws Exception {
-        log.info("Starting to learn");
+        log.info("Starting to learn on JVM version {}", Runtime.version());
         ImageFolder dataset = loadDataset(POVRAY_CROPPED);
         RandomAccessDataset[] datasets = dataset.randomSplit(80, 20);
 
         Engine.getInstance().setRandomSeed(42);
+
+        int trainedEpochs = 0;
+        long trainTime = 0;
 
         try (Model model = getModel();
              Trainer trainer = model.newTrainer(getTrainingConfig())) {
@@ -71,6 +73,8 @@ public class Learning {
             earlyStoppingFit.fit(trainer, datasets[0], datasets[1]);
 
             log.info("Model build complete in " + (System.currentTimeMillis() - startTime) / 1000 + "sec");
+            trainedEpochs++;
+            trainTime += System.currentTimeMillis() - startTime;
 
             // set model properties
             TrainingResult result = trainer.getTrainingResult();
@@ -85,6 +89,7 @@ public class Learning {
 
             printStatisticsPerEpoch(trainer);
         }
+        log.info("Average build time: " + (trainTime / trainedEpochs) + "ms");
     }
 
     private static EarlyStoppingFit getEarlyStoppingFit(Model model, Path modelDir) {
@@ -129,8 +134,6 @@ public class Learning {
         for (int i = 0; i < trainAccuracy.length; i++) {
             log.info(i + 1 + "," + trainLoss[i] + "," + testLoss[i] + "," + trainAccuracy[i] + "," + testAccuracy[i]);
         }
-        // Force exit, something keeps running in the background, TODO figure out why app is not exiting.
-        System.exit(0);
     }
 
     private static void saveLabels(Path modelDir, List<String> synset) throws IOException {
@@ -180,13 +183,12 @@ public class Learning {
     private static ImageFolder loadDataset(String folder) throws IOException {
         ImageFolder dataset = ImageFolder.builder()
                 .setRepositoryPath(Paths.get(folder))
-//                .addTransform(new TestTransform())
-                .addTransform(new Resize(224, 224))
-               // .addTransform(new RandomColorJitter(0.4f, 0.4f, 0.4f, 0.4f)) // not supported on GPU
+                // .addTransform(new Resize(width, height)) // not needed as we only have correct sized images
+                // .addTransform(new RandomColorJitter(0.4f, 0.4f, 0.4f, 0.4f)) // not supported on GPU
                 .addTransform(new RandomFlipLeftRight())
                 .addTransform(new RandomFlipTopBottom())
                 .addTransform(new ToTensor())
-                .setSampling(32, true)
+                .setSampling(8, true)
                 .optFlag(Image.Flag.GRAYSCALE)
                 .build();
         dataset.prepare(new ProgressBar());

@@ -18,20 +18,23 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import static org.acme.lego.util.AiModelHelper.MODEL_NAME;
-import static org.acme.lego.util.AiModelHelper.getModel;
-
+import static org.acme.lego.util.AiModelHelper.*;
 
 public class ModelVerification {
     private static final Logger logger = LoggerFactory.getLogger(ModelVerification.class);
 
-    private static final String VALIDATION_SET = "samples_mobile/cropped";
+    //    private static final String VALIDATION_SET = "povray/cropped";
+    private static final String VALIDATION_SET = "../samples/camsamplecropped";
+    public static final double UNSURE_CUTOFF = 0.0;
 
-    private static Path modelDir = Paths.get("model");
+    private static Pattern FILE_NAME_PATTERN = Pattern.compile(".*?e-(\\d+)-v-(\\d+.\\d+)");
 
-    private static Path multipleModelsDir = Paths.get("models");
+    private static Path modelDir = Paths.get("../model");
+
+    private static Path multipleModelsDir = Paths.get("../models");
 
     private final Map<String, Map<String, Integer>> matrix = new HashMap<>();
 
@@ -40,6 +43,7 @@ public class ModelVerification {
     private double accuracy;
 
     public static void main(String[] args) throws Exception {
+        logger.info("Starting model verification");
         File targetSynset = new File(modelDir.toFile(), "synset.txt");
         for (File file : multipleModelsDir.toFile().listFiles((dir, name) -> name.endsWith(".params"))) {
             logger.info("Testing model {}", file.getName());
@@ -66,14 +70,26 @@ public class ModelVerification {
         totalScore.keySet().stream().sorted().forEach(key -> {
             logger.info("Model {} accuracy {}", key, totalScore.get(key));
         });
+        printBestResult();
+    }
+
+    static void printBestResult() {
+        Optional<ValidationResult> bestResult = totalScore.entrySet().stream().map(e -> {
+            final var matcher = FILE_NAME_PATTERN.matcher(e.getKey());
+            if (matcher.matches()) {
+                return new ValidationResult(Integer.parseInt(matcher.group(1)), e.getValue());
+            }
+            logger.error("Did not find epoch in file name: {}", e.getKey());
+            return new ValidationResult(Integer.MIN_VALUE, Integer.MIN_VALUE);
+        }).sorted().findFirst();
+        bestResult.ifPresent(validationResult -> logger.info("Best epoch: {} with accuracy: {}", validationResult.epoch(), validationResult.accuracy()));
     }
 
     private static Translator<Image, Classifications> createTranslator() {
         return ImageClassificationTranslator.builder()
 //                .addTransform(new Resize(width, height))
-//                .addTransform(new TestTransform())
                 .addTransform(new ToTensor())
-                .optFlag(Image.Flag.GRAYSCALE)
+                .optFlag(channels == 1 ? Image.Flag.GRAYSCALE : Image.Flag.COLOR)
                 .optApplySoftmax(true)
                 .build();
     }
@@ -85,9 +101,11 @@ public class ModelVerification {
         // run the inference using a Predictor
         try (Predictor<Image, Classifications> predictor = model.newPredictor(translator)) {
             Stream.of(new File(VALIDATION_SET).listFiles(filter -> filter.isDirectory())).forEach(folder -> {
-                Stream.of(folder.listFiles(filter -> filter.isFile())).forEach(file -> {
-                    predictFile(predictor, folder, file);
-                });
+                Stream.of(folder.listFiles(filter -> filter.isFile()))
+                        .filter(file -> (file.getName().endsWith(".png") || file.getName().endsWith(".jpg")) && !file.getName().startsWith("."))
+                        .forEach(file -> {
+                            predictFile(predictor, folder, file);
+                        });
             });
         }
         printConfusionMatrix();
@@ -114,7 +132,7 @@ public class ModelVerification {
             Classifications.Classification classification = classificationList.get(0);
             String className = classification.getClassName();
             String classNameToLog = classification.getClassName();
-            if (classification.getProbability() > 0.8) {
+            if (classification.getProbability() > UNSURE_CUTOFF) {
                 var outcome = matrix.getOrDefault(folder.getName(), new HashMap<>());
                 var count = outcome.getOrDefault(className, 0);
                 outcome.put(className, count + 1);
