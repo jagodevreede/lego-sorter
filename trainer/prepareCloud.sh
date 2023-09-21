@@ -1,10 +1,11 @@
 #!/bin/bash
-USERNAME=ubuntu
 if [ "$#" -ne 1 ]; then
   echo "Illegal number of parameters"
   echo "Start script: runOnCloud.sh ip_of_machine"
   exit
 fi
+
+source env.sh
 
 if [[ ! -f training_data.tar.gz ]]; then
   echo "Compressing data"

@@ -1,13 +1,13 @@
 #!/bin/bash
-USERNAME=ubuntu
-UPDATE=1
 if [ "$#" -ne 1 ]; then
   echo "Illegal number of parameters"
   echo "Start script: runOnCloud.sh ip_of_machine"
   exit
 fi
 
-mvn -f ../pom.xml -am -pl trainer clean package -P arm
+source env.sh
+
+mvn -f ../pom.xml -am -pl trainer clean package -P gpu
 
 # kill old process if there are any, and create folder
 ssh -o "StrictHostKeyChecking no" $USERNAME@$1 'killall -9 java; mkdir -p lego/app/app/'

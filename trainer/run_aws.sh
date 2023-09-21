@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# Specify the name of the EC2 instance you want to start
-INSTANCE_NAME="pytorch 2"
+source env.sh
 
 # Find the instance ID using the AWS CLI and store it in a variable
 INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=${INSTANCE_NAME}" --query "Reservations[0].Instances[0].InstanceId" --output text)
@@ -53,6 +52,9 @@ fi
 
 PUBLIC_IP=$(aws ec2 describe-instances --instance-ids "$INSTANCE_ID" --query "Reservations[0].Instances[0].PublicIpAddress" --output text)
 echo "Public IP address of the instance: $PUBLIC_IP"
+
+# Login to the instance
+ssh -o "StrictHostKeyChecking no" $USERNAME@$PUBLIC_IP 'echo "Hello from instance"'
 
 ./prepareCloud.sh $PUBLIC_IP
 ./runOnCloud.sh $PUBLIC_IP
