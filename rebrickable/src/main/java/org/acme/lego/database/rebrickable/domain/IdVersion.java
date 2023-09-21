@@ -1,8 +1,8 @@
 package org.acme.lego.database.rebrickable.domain;
 
+import jakarta.persistence.Embeddable;
 import lombok.*;
 
-import javax.persistence.Embeddable;
 import java.io.Serial;
 import java.io.Serializable;
 

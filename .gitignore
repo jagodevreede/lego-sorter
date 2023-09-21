@@ -82,3 +82,4 @@ vgg16_models/
 samples_mobile/
 .angular
 dependency-reduced-pom.xml
+*.mp4

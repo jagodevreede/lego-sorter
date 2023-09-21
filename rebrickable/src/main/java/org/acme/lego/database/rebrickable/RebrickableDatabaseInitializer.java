@@ -1,6 +1,10 @@
 package org.acme.lego.database.rebrickable;
 
 import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -8,10 +12,6 @@ import org.acme.lego.database.rebrickable.domain.*;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.transaction.Transactional;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
